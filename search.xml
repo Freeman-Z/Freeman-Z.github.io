@@ -125,9 +125,9 @@
         <category>分布式框架</category>
       </categories>
       <tags>
-        <tag>NIO</tag>
         <tag>IO</tag>
         <tag>BIO</tag>
+        <tag>NIO</tag>
         <tag>netty</tag>
       </tags>
   </entry>
