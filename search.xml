@@ -23,9 +23,9 @@
     <title>理解IO模型与多路复用</title>
     <url>/2021/01/19/%E7%90%86%E8%A7%A3IO%E6%A8%A1%E5%9E%8B%E4%B8%8E%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/</url>
     <content><![CDATA[<h3 id="IO模型"><a href="#IO模型" class="headerlink" title="IO模型"></a>IO模型</h3><p>IO模型就是说用什么样的通道进行数据的发送和接收，Java支持3种网络编程IO模式：<strong>BIO,NIO,AIO</strong></p>
+<h4 id="BIO-Blocking-IO"><a href="#BIO-Blocking-IO" class="headerlink" title="BIO(Blocking IO)"></a>BIO(Blocking IO)</h4><p>同步阻塞。同步就是上一个步骤没有完成，就不能进行下一个步骤。阻塞就是必须等待一个步骤处理完，并得到结果。对于单线程的网络服务，这样做就会有卡死的问题，因为当等待时，整个线程会被挂起，无法执行，也无法做其他的工作。于是，网络服务为了同时响应多个并发的网络请求，必须实现为多线程的。每个线程处理一个网络请求。</p>
 <a id="more"></a>
 
-<h4 id="BIO-Blocking-IO"><a href="#BIO-Blocking-IO" class="headerlink" title="BIO(Blocking IO)"></a>BIO(Blocking IO)</h4><p>同步阻塞。同步就是上一个步骤没有完成，就不能进行下一个步骤。阻塞就是必须等待一个步骤处理完，并得到结果。对于单线程的网络服务，这样做就会有卡死的问题，因为当等待时，整个线程会被挂起，无法执行，也无法做其他的工作。于是，网络服务为了同时响应多个并发的网络请求，必须实现为多线程的。每个线程处理一个网络请求。</p>
 <p><strong>应用场景：</strong></p>
 <p>连接数目比较小且固定的架构，这种方式对服务器资源要求比较高， 但程序简单易理解。</p>
 <p><img src="/2021/01/19/%E7%90%86%E8%A7%A3IO%E6%A8%A1%E5%9E%8B%E4%B8%8E%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/bio.png" alt="bio"></p>
@@ -58,8 +58,28 @@
 <blockquote>
 <p>文件描述符：<strong>Linux的内核将所有外部设备都看做一个文件来操作</strong>，<strong>对一个文件的读写操作会调用内核提供的系统命令</strong>（api），返回一个file descriptor（fd，文件描述符）。而对一个socket的读写也会有相应的描述符，称为socket fd（socket文件描述符），**描述符就是一个数字，指向内核中的一个结构体（文件路径，数据区等一些属性）。所以说：在Linux下对文件的操作是利用文件描述来符实现的。</p>
 </blockquote>
-<p><strong>Epoll函数详解</strong></p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_create</span><span class="params">(<span class="keyword">int</span> size)</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="AIO-NIO-2-0"><a href="#AIO-NIO-2-0" class="headerlink" title="AIO(NIO 2.0)"></a>AIO(NIO 2.0)</h4><p><strong>异步非阻塞， 由操作系统完成后回调通知服务端程序启动线程去处理， 一般适用于连接数较多且连接时间较长的应用</strong></p>
+<p><strong>应用场景：</strong></p>
+<p>AIO方式适用于连接数目多且连接比较长(重操作)的架构，JDK7 开始支持</p>
+<p>AIO代码示例：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AIOServer</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> AsynchronousServerSocketChannel serverChannel = AsynchronousServerSocketChannel</span><br><span class="line">          .open().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">8888</span>));</span><br><span class="line">        serverChannel.accept(<span class="keyword">null</span>, <span class="keyword">new</span> CompletionHandler&lt;AsynchronousSocketChannel, Object&gt;() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(AsynchronousSocketChannel socketChannel, Object attachment)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;2--&quot;</span> + Thread.currentThread().getName());</span><br><span class="line">                    <span class="comment">//再次接收客户端连接，如果不写会导致后面的客户端连不上服务端</span></span><br><span class="line">                    serverChannel.accept(attachment, <span class="keyword">this</span>);</span><br><span class="line">                    System.out.println(socketChannel.getRemoteAddress());</span><br><span class="line">                    ByteBuffer buffer = ByteBuffer.allocate(<span class="number">1024</span>);</span><br><span class="line">                    socketChannel.read(buffer, buffer, <span class="keyword">new</span> CompletionHandler&lt;Integer, ByteBuffer&gt;() &#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(Integer result, ByteBuffer attachment)</span> </span>&#123;</span><br><span class="line">                            System.out.println(<span class="string">&quot;3--&quot;</span> + Thread.currentThread().getName());</span><br><span class="line">                            buffer.flip();</span><br><span class="line">                            System.out.println(<span class="keyword">new</span> String(buffer.array(),<span class="number">0</span>, result));</span><br><span class="line">                            socketChannel.write(ByteBuffer.wrap(<span class="string">&quot;HelloClient&quot;</span>.getBytes()));</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, ByteBuffer attachment)</span> </span>&#123;</span><br><span class="line">                            exc.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">                &#125;<span class="keyword">catch</span> (IOException e)&#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, Object attachment)</span> </span>&#123;</span><br><span class="line">                exc.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        System.out.println(<span class="string">&quot;1--&quot;</span> + Thread.currentThread().getName());</span><br><span class="line">        Thread.sleep(Integer.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AIOClient</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        AsynchronousSocketChannel socketChannel = AsynchronousSocketChannel.open();</span><br><span class="line">        socketChannel.connect(<span class="keyword">new</span> InetSocketAddress(<span class="string">&quot;127.0.0.1&quot;</span>, <span class="number">8888</span>)).get();</span><br><span class="line">        socketChannel.write(ByteBuffer.wrap(<span class="string">&quot;HelloServer&quot;</span>.getBytes()));</span><br><span class="line">        ByteBuffer buffer = ByteBuffer.allocate(<span class="number">512</span>);</span><br><span class="line">        Integer len = socketChannel.read(buffer).get();</span><br><span class="line">        <span class="keyword">if</span>(len != -<span class="number">1</span>)&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;客户端收到信息&quot;</span> + <span class="keyword">new</span> String(buffer.array(), <span class="number">0</span> , len));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="BIO、-NIO、-AIO-对比："><a href="#BIO、-NIO、-AIO-对比：" class="headerlink" title="BIO、 NIO、 AIO 对比："></a>BIO、 NIO、 AIO 对比：</h4><p><img src="/2021/01/19/%E7%90%86%E8%A7%A3IO%E6%A8%A1%E5%9E%8B%E4%B8%8E%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/diff.png" alt="diff"></p>
+<h4 id="为什么Netty使用NIO而不是AIO？"><a href="#为什么Netty使用NIO而不是AIO？" class="headerlink" title="为什么Netty使用NIO而不是AIO？"></a>为什么Netty使用NIO而不是AIO？</h4><p>在Linux系统上，AIO的底层实现仍使用Epoll，没有很好实现AIO，因此在性能上没有明显的优势，而且被JDK封装了一层不容易深度优化，Linux上AIO还不够成熟。Netty是<strong>异步非阻塞</strong>框架，Netty在NIO上做了很多异步的封装。</p>
+<h3 id="IO多路复用（Linux）"><a href="#IO多路复用（Linux）" class="headerlink" title="IO多路复用（Linux）"></a>IO多路复用（Linux）</h3><p>IO多路复用是一个线程通过一个select就可以检查多个文件描述符，它们能够同时检查多个文件描述符，看这些文件描述符是否处于就绪状态（对文件的IO系统调用能否非阻塞的执行）。文件描述符就绪状态的转换是通过一些I/O事件来触发的， 比如输入数据到达，套接字把连接建立完成，或者是之前满载的套接字发送缓冲区在TCP将队列中的数据传送到对端之后有了剩余空间。事件轮询API在Jdk中包装后就是NIO，但是多路复用不是Java特有的，其他语言中他们不叫NIO而已。</p>
+<p>NIO底层在JDK1.4版本是用linux的内核函数select()或poll()来实现，JDK1.5开始引入了epoll基于事件响应机制来优化NIO。接下来是Linux中事件轮询API。</p>
+<h4 id="select"><a href="#select" class="headerlink" title="select"></a>select</h4><p>系统调用selet()会一直阻塞，所以从操作系统角度上看，select也是同步阻塞的，包括poll/epoll都是如此，直到一个或多个文件描述符集合成为就绪状态。在select中提供了三个集合<strong>readfds、writefds、exceptfds</strong>，分别代表的是<strong>输入就绪、输出就绪、异常发生</strong></p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">select</span><span class="params">(<span class="keyword">int</span> nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)</span></span>; </span><br></pre></td></tr></table></figure>
+<p>输入是读写描述符列表readfds和write_fds，输出是与之对应的事件。</p>
+<p><strong>存在的问题</strong></p>
+<ol>
+<li>每次调用select，都需要把fd_set集合从用户态拷贝到内核态，如果fd_set集合很大时，这个开销也很大</li>
+<li>同时每次调用select都需要在内核遍历传递进来的所有fd_set，如果fd_set集合很大时，这个开销也很大</li>
+<li>为了减少数据拷贝带来的性能损坏，内核对监控的fd_set集合大小做了限制（默认为1024）</li>
+</ol>
+<h4 id="poll"><a href="#poll" class="headerlink" title="poll"></a>poll</h4><p>系统调用poll()执行的任务通select()很相似，两者的区别主要在于我们如何指定文件描述符。在select中，我们需要提供三个集合，每个集合表明我们感兴趣的文件描述符，而在 poll()中提供一列文件描述符，并在每个文件描述符上标明我们感兴趣的事件:</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">poll</span><span class="params">(struct pollfd fds[], <span class="keyword">nfds_t</span> nfds, <span class="keyword">int</span> timeout)</span></span>;</span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span> &#123;</span></span><br><span class="line"> <span class="keyword">int</span> fd;               <span class="comment">// 文件描述符</span></span><br><span class="line"> <span class="keyword">short</span> events;        <span class="comment">// 调用者指定该文件描述符感兴趣的事件</span></span><br><span class="line"> <span class="keyword">short</span> revents;      <span class="comment">// 该文件描述符上实际发生的事件</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>poll和select机制是类似的，本质没有什么区别，相对于select来讲，epoll是没有描述符个数限制的，也就是说poll只解决了select第三个问题，并没有解决性能开销问题。</p>
+<h4 id="Epoll"><a href="#Epoll" class="headerlink" title="Epoll"></a>Epoll</h4><figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_create</span><span class="params">(<span class="keyword">int</span> size)</span></span>;</span><br></pre></td></tr></table></figure>
 <p>创建一个epoll实例，并返回一个非负数作为文件描述符，用于对epoll接口的所有后续调用。参数size代表可能会容纳size个描述符，但size不是一个最大值，只是提示操作系统它的数量级，现在这个参数基本上已经弃用了。</p>
 <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_ctl</span><span class="params">(<span class="keyword">int</span> epfd, <span class="keyword">int</span> op, <span class="keyword">int</span> fd, struct epoll_event *event)</span></span>;    </span><br></pre></td></tr></table></figure>
 <p>使用文件描述符epfd引用的epoll实例，对目标文件描述符fd执行op操作。</p>
@@ -70,10 +90,14 @@
 <p>EPOLL_CTL_DEL：从epfd中移除fd，并且忽略掉绑定的event，这时event可以为null；          </p>
 <p>使用文件描述符epfd引用的epoll实例，对目标文件描述符fd执行op操作。</p>
 <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_wait</span><span class="params">(<span class="keyword">int</span> epfd, struct epoll_event *events, <span class="keyword">int</span> maxevents, <span class="keyword">int</span> timeout)</span></span>;                              </span><br></pre></td></tr></table></figure>
-<p>等待文件描述符epfd上的事件。</p>
+<p>函数等待文件描述符epfd上的事件的就绪，成功时返回就绪的事件数目，调用失败时返回 -1，等待超时返回 0</p>
 <p>epfd是Epoll对应的文件描述符，events表示调用者所有可用事件的集合，maxevents表示最多等到多少个事件就返回，timeout是超时时间。</p>
-<p>NIO底层在JDK1.4版本是用linux的内核函数select()或poll()来实现，跟上面的NioServer代码类似，selector每次都会轮询所有的sockchannel看下哪个channel有读写事件，有的话就处理，没有就继续遍历，JDK1.5开始引入了epoll基于事件响应机制来优化NIO。</p>
-<table>
+<p><strong>Epoll基于事件驱动的 I/O 方式</strong>，相对于 select 来说，epoll 没有描述符个数限制，使用一个文件描述符管理多个描述符，将用户关心的文件描述符的事件存放到内核的一个事件表中，这样在用户空间和内核空间的copy只需一次，解决了之前函数的缺陷：</p>
+<ul>
+<li>涉及到fd数组在用户空间到内核空间数据拷贝的过程</li>
+<li>select和poll函数返回值只能代表有几个socket就绪，没法表示具体是哪个socket就绪，这就需要重新遍历fd数组去检查那个socket是就绪的</li>
+</ul>
+<h4 id="事件轮询API对比"><a href="#事件轮询API对比" class="headerlink" title="事件轮询API对比"></a>事件轮询API对比</h4><table>
 <thead>
 <tr>
 <th></th>
@@ -107,19 +131,6 @@
 <td>无上限</td>
 </tr>
 </tbody></table>
-<p>epoll它主要就是为了解决select和poll函数的缺陷，两个主要缺点：</p>
-<ul>
-<li>涉及到fd数组在用户空间到内核空间数据拷贝的过程</li>
-<li>select和poll函数返回值只能代表有几个socket就绪，没法表示具体是哪个socket就绪，这就需要重新遍历fd数组去检查那个socket是就绪的</li>
-</ul>
-<h4 id="AIO-NIO-2-0"><a href="#AIO-NIO-2-0" class="headerlink" title="AIO(NIO 2.0)"></a>AIO(NIO 2.0)</h4><p><strong>异步非阻塞， 由操作系统完成后回调通知服务端程序启动线程去处理， 一般适用于连接数较多且连接时间较长的应用</strong></p>
-<p><strong>应用场景：</strong></p>
-<p>AIO方式适用于连接数目多且连接比较长(重操作)的架构，JDK7 开始支持</p>
-<p>AIO代码示例：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AIOServer</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> AsynchronousServerSocketChannel serverChannel = AsynchronousServerSocketChannel</span><br><span class="line">          .open().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">8888</span>));</span><br><span class="line">        serverChannel.accept(<span class="keyword">null</span>, <span class="keyword">new</span> CompletionHandler&lt;AsynchronousSocketChannel, Object&gt;() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(AsynchronousSocketChannel socketChannel, Object attachment)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;2--&quot;</span> + Thread.currentThread().getName());</span><br><span class="line">                    <span class="comment">//再次接收客户端连接，如果不写会导致后面的客户端连不上服务端</span></span><br><span class="line">                    serverChannel.accept(attachment, <span class="keyword">this</span>);</span><br><span class="line">                    System.out.println(socketChannel.getRemoteAddress());</span><br><span class="line">                    ByteBuffer buffer = ByteBuffer.allocate(<span class="number">1024</span>);</span><br><span class="line">                    socketChannel.read(buffer, buffer, <span class="keyword">new</span> CompletionHandler&lt;Integer, ByteBuffer&gt;() &#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(Integer result, ByteBuffer attachment)</span> </span>&#123;</span><br><span class="line">                            System.out.println(<span class="string">&quot;3--&quot;</span> + Thread.currentThread().getName());</span><br><span class="line">                            buffer.flip();</span><br><span class="line">                            System.out.println(<span class="keyword">new</span> String(buffer.array(),<span class="number">0</span>, result));</span><br><span class="line">                            socketChannel.write(ByteBuffer.wrap(<span class="string">&quot;HelloClient&quot;</span>.getBytes()));</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, ByteBuffer attachment)</span> </span>&#123;</span><br><span class="line">                            exc.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">                &#125;<span class="keyword">catch</span> (IOException e)&#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, Object attachment)</span> </span>&#123;</span><br><span class="line">                exc.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        System.out.println(<span class="string">&quot;1--&quot;</span> + Thread.currentThread().getName());</span><br><span class="line">        Thread.sleep(Integer.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AIOClient</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        AsynchronousSocketChannel socketChannel = AsynchronousSocketChannel.open();</span><br><span class="line">        socketChannel.connect(<span class="keyword">new</span> InetSocketAddress(<span class="string">&quot;127.0.0.1&quot;</span>, <span class="number">8888</span>)).get();</span><br><span class="line">        socketChannel.write(ByteBuffer.wrap(<span class="string">&quot;HelloServer&quot;</span>.getBytes()));</span><br><span class="line">        ByteBuffer buffer = ByteBuffer.allocate(<span class="number">512</span>);</span><br><span class="line">        Integer len = socketChannel.read(buffer).get();</span><br><span class="line">        <span class="keyword">if</span>(len != -<span class="number">1</span>)&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;客户端收到信息&quot;</span> + <span class="keyword">new</span> String(buffer.array(), <span class="number">0</span> , len));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="BIO、-NIO、-AIO-对比："><a href="#BIO、-NIO、-AIO-对比：" class="headerlink" title="BIO、 NIO、 AIO 对比："></a>BIO、 NIO、 AIO 对比：</h4><p><img src="/2021/01/19/%E7%90%86%E8%A7%A3IO%E6%A8%A1%E5%9E%8B%E4%B8%8E%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/diff.png" alt="diff"></p>
-<p><strong>为什么Netty使用NIO而不是AIO？</strong></p>
-<p>在Linux系统上，AIO的底层实现仍使用Epoll，没有很好实现AIO，因此在性能上没有明显的优势，而且被JDK封装了一层不容易深度优化，Linux上AIO还不够成熟。Netty是<strong>异步非阻塞</strong>框架，Netty在NIO上做了很多异步的封装。</p>
 ]]></content>
       <categories>
         <category>分布式框架</category>
@@ -128,6 +139,59 @@
         <tag>IO</tag>
         <tag>BIO</tag>
         <tag>NIO</tag>
+        <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Netty线程模型</title>
+    <url>/2021/01/21/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
+    <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
+<p>开发工作量和难度都非常大： 例如客户端面临断线重连、 网络闪断、心跳处理、半包读写、 网络拥塞和异常流的处理等等。</p>
+<p>Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装，解决了上述问题。且Netty拥有高性能、 吞吐量更高，延迟更低，减少资源消耗，最小化不必要的内存复制等优点。</p>
+<p>Netty框架的目标大概可以理解为让业务代码从网络基础应用编码中分离，让开发可以专注开发业务代码，而不用写一大堆类似NIO的网络处理操作。</p>
+<a id="more"></a>
+
+<h3 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h3><h4 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h4><p>Reactor 是一种设计模式，<a href="https://en.wikipedia.org/wiki/Reactor_pattern">wikipedia</a> 对其定义如下：</p>
+<blockquote>
+<p>Reactor 是一个或多个输入事件的处理模式，用于处理并发传递给服务处理程序的服务请求。服务处理程序判断传入请求发生的事件，并将它们同步的分派给关联的请求处理程序。</p>
+</blockquote>
+<p>Reactor 模式按照职责不同，通常可以把线程分为 Reactor 线程、IO 线程和业务线程：</p>
+<ul>
+<li>Reactor 线程：轮询通知发生IO的通道，并分派合适的 Handler 处理</li>
+<li>IO 线程：执行实际的读写操作</li>
+<li>业务线程：执行应用程序的业务逻辑</li>
+</ul>
+<p><strong>单线程版本</strong></p>
+<p>单线程版本其实就是用一个线程完成事件的通知，实际的I/O操作和业务处理</p>
+<p><img src="/2021/01/21/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png" alt="basic"></p>
+<p><strong>缺点</strong></p>
+<p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
+<p><strong>多线程版本</strong></p>
+<p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
+<p><img src="/2021/01/21/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multithreaded.png" alt="multithreaded"></p>
+<p><strong>缺点</strong></p>
+<p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
+<p><strong>主从版本</strong></p>
+<p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
+<p><img src="/2021/01/21/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png" alt="master-slave"></p>
+<p><strong>Netty线程模型</strong></p>
+<p><img src="/2021/01/21/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png" alt="netty"></p>
+]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
+        <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Netty编解码&amp;粘包拆包&amp;心跳机制&amp;断线自动重连</title>
+    <url>/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/</url>
+    <content><![CDATA[]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
         <tag>netty</tag>
       </tags>
   </entry>
