@@ -28,13 +28,13 @@
 <meta property="og:description" content="Netty初窥NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png">
-<meta property="og:image" content="http://example.com/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multithreaded.png">
+<meta property="og:image" content="http://example.com/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png">
 <meta property="og:image" content="http://example.com/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png">
 <meta property="og:image" content="http://example.com/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png">
 <meta property="og:image" content="http://example.com/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/channel_pipeline.png">
-<meta property="og:image" content="http://example.com/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/ByteBuf.png">
+<meta property="og:image" content="http://example.com/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/bytebuf.png">
 <meta property="article:published_time" content="2021-01-21T12:39:34.000Z">
-<meta property="article:modified_time" content="2021-02-08T06:38:04.526Z">
+<meta property="article:modified_time" content="2021-02-08T06:43:17.093Z">
 <meta property="article:author" content="Freeman">
 <meta property="article:tag" content="netty">
 <meta name="twitter:card" content="summary">
@@ -226,7 +226,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-02-08 14:38:04" itemprop="dateModified" datetime="2021-02-08T14:38:04+08:00">2021-02-08</time>
+                <time title="修改时间：2021-02-08 14:43:17" itemprop="dateModified" datetime="2021-02-08T14:43:17+08:00">2021-02-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -270,7 +270,7 @@
 <p><strong>缺点</strong></p>
 <p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
 <h5 id="多线程版本"><a href="#多线程版本" class="headerlink" title="多线程版本"></a>多线程版本</h5><p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multithreaded.png" alt="multithreaded"></p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png" alt="multithreaded"></p>
 <p><strong>缺点</strong></p>
 <p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
 <h5 id="主从版本"><a href="#主从版本" class="headerlink" title="主从版本"></a>主从版本</h5><p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
@@ -344,7 +344,7 @@
 <p>ByteBuf提供了两个索引，一个用于读取数据，一个用于写入数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置</p>
 <p>当从ByteBuf读取时，它的readIndex(读索引)将会根据读取的字节递增。</p>
 <p>同样当写ByteBuf时，他的writeIndex也会根据写入的字节数进行递增。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/ByteBuf.png" alt="ByteBuf"></p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/bytebuf.png" alt="ByteBuf"></p>
 <p>需要注意的是极限的情况是 readerIndex 刚好读到了 writerIndex 写入的地方。<br>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
 <blockquote>
 <p>已经读取的区域：[0,readerindex)</p>
