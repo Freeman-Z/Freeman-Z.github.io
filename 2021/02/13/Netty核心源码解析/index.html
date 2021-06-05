@@ -20,17 +20,17 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="Netty线程模型图">
+  <meta name="description" content="Netty高并发高性能架构设计精髓 主从Reactor模型  NIO多路复用非阻塞  无锁串行化思想  支持高性能序列化协议  零拷贝（直接内存的使用）  ByteBuf内存池设计  灵活的TCP参数配置能力  并发优化">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Netty核心源码解析">
 <meta property="og:url" content="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/index.html">
 <meta property="og:site_name" content="Freeman&#39;s blog">
-<meta property="og:description" content="Netty线程模型图">
+<meta property="og:description" content="Netty高并发高性能架构设计精髓 主从Reactor模型  NIO多路复用非阻塞  无锁串行化思想  支持高性能序列化协议  零拷贝（直接内存的使用）  ByteBuf内存池设计  灵活的TCP参数配置能力  并发优化">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png">
 <meta property="og:image" content="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg">
 <meta property="article:published_time" content="2021-02-12T16:12:53.000Z">
-<meta property="article:modified_time" content="2021-02-12T16:28:10.752Z">
+<meta property="article:modified_time" content="2021-06-05T15:40:29.312Z">
 <meta property="article:author" content="Freeman">
 <meta property="article:tag" content="netty">
 <meta name="twitter:card" content="summary">
@@ -214,10 +214,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2021-02-13 00:12:53 / 修改时间：00:28:10" itemprop="dateCreated datePublished" datetime="2021-02-13T00:12:53+08:00">2021-02-13</time>
+              <time title="创建时间：2021-02-13 00:12:53" itemprop="dateCreated datePublished" datetime="2021-02-13T00:12:53+08:00">2021-02-13</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-06-05 23:40:29" itemprop="dateModified" datetime="2021-06-05T23:40:29+08:00">2021-06-05</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -239,21 +245,31 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
+        <h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
+<li><p>主从Reactor模型</p>
+</li>
+<li><p>NIO多路复用非阻塞</p>
+</li>
+<li><p>无锁串行化思想</p>
+</li>
+<li><p>支持高性能序列化协议</p>
+</li>
+<li><p>零拷贝（直接内存的使用）</p>
+</li>
+<li><p>ByteBuf内存池设计</p>
+</li>
+<li><p>灵活的TCP参数配置能力</p>
+</li>
+<li><p>并发优化</p>
 <a id="more"></a>
+
+</li>
+</ul>
+<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
+<!-- more -->
 
 <h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a target="_blank" rel="noopener" href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
 <p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
-<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
-<li>主从Reactor模型</li>
-<li>NIO多路复用非阻塞</li>
-<li>无锁串行化思想</li>
-<li>支持高性能序列化协议</li>
-<li>零拷贝（直接内存的使用）</li>
-<li>ByteBuf内存池设计</li>
-<li>灵活的TCP参数配置能力</li>
-<li>并发优化</li>
-</ul>
 
     </div>
 
@@ -337,7 +353,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E5%9B%BE"><span class="nav-number">1.</span> <span class="nav-text">Netty线程模型图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">2.</span> <span class="nav-text">Netty核心源码流程图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty%E9%AB%98%E5%B9%B6%E5%8F%91%E9%AB%98%E6%80%A7%E8%83%BD%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%E7%B2%BE%E9%AB%93"><span class="nav-number">3.</span> <span class="nav-text">Netty高并发高性能架构设计精髓</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty%E9%AB%98%E5%B9%B6%E5%8F%91%E9%AB%98%E6%80%A7%E8%83%BD%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%E7%B2%BE%E9%AB%93"><span class="nav-number">1.</span> <span class="nav-text">Netty高并发高性能架构设计精髓</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E5%9B%BE"><span class="nav-number">2.</span> <span class="nav-text">Netty线程模型图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">3.</span> <span class="nav-text">Netty核心源码流程图</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -360,7 +376,7 @@
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-count">2</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

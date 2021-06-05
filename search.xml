@@ -116,21 +116,31 @@
   <entry>
     <title>Netty核心源码解析</title>
     <url>/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
-    <content><![CDATA[<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
+    <content><![CDATA[<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
+<li><p>主从Reactor模型</p>
+</li>
+<li><p>NIO多路复用非阻塞</p>
+</li>
+<li><p>无锁串行化思想</p>
+</li>
+<li><p>支持高性能序列化协议</p>
+</li>
+<li><p>零拷贝（直接内存的使用）</p>
+</li>
+<li><p>ByteBuf内存池设计</p>
+</li>
+<li><p>灵活的TCP参数配置能力</p>
+</li>
+<li><p>并发优化</p>
 <a id="more"></a>
+
+</li>
+</ul>
+<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
+<!-- more -->
 
 <h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
 <p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
-<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
-<li>主从Reactor模型</li>
-<li>NIO多路复用非阻塞</li>
-<li>无锁串行化思想</li>
-<li>支持高性能序列化协议</li>
-<li>零拷贝（直接内存的使用）</li>
-<li>ByteBuf内存池设计</li>
-<li>灵活的TCP参数配置能力</li>
-<li>并发优化</li>
-</ul>
 ]]></content>
       <categories>
         <category>分布式框架</category>
@@ -217,6 +227,99 @@
       </categories>
       <tags>
         <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring中Bean的生命周期</title>
+    <url>/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
+    <content><![CDATA[<h1 id="Spring中Bean的生命周期"><a href="#Spring中Bean的生命周期" class="headerlink" title="Spring中Bean的生命周期"></a>Spring中Bean的生命周期</h1><p>Spring最重要的功能就是帮助程序员创建对象（也就是IOC），而启动Spring就是为创建Bean对象做准备，所以我们先明白Spring到底是则呢怎么去创建Bean的，也就是先弄明白Bean的生命周期。</p>
+<p>Bean的生命周期就是指：<strong>在Spring中，一个Bean是如何生成的，如何销毁的？</strong></p>
+<a id="more"></a>
+
+<p><img src="/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/Bean%E7%9A%84%E7%94%9F%E6%88%90%E8%BF%87%E7%A8%8B.jpg" alt="Bean的生命周期"></p>
+<h2 id="Bean的生成过程"><a href="#Bean的生成过程" class="headerlink" title="Bean的生成过程"></a>Bean的生成过程</h2><h3 id="1-生成BeanDefinition"><a href="#1-生成BeanDefinition" class="headerlink" title="1.生成BeanDefinition"></a>1.生成BeanDefinition</h3><p>Spring启动的时候会进行扫描，会先调用</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br></pre></td></tr></table></figure>
+<p>拿到所指定的包路径下的所有文件资源（******.class文件）</p>
+<p>然后会遍历每个Resource，为每个Resource生成一个MetadataReader对象，这个对象拥有三个功能：</p>
+<ol>
+<li>获取对应的Resource资源</li>
+<li>获取Resource对应的class元数据信息，包括类的名字，是不是接口、是不是一个注解、是不是抽象类、有没有父类，父类的名字，所实现的所有接口的名字，内部类的类名等等</li>
+<li>获取Resource对应的class上的注解信息，当前类上有哪些注解，当前类中有哪些方法上有注解</li>
+</ol>
+<p>在生成MetadataReader对象时，会利用<strong>ASM</strong>技术解析class文件，得到类的元数据集信息合注解信息，在这个过程中也会利用ClassLoader去加载注解类（<strong>ClassUtils.getDefaultClassLoader()所获得的类加载器</strong>），但是不会加载本类。</p>
+<p>有了MetadataReader对象，就相当于有了当前类的所有信息，但是当前类并没有加载，也是可以理解的，真正在用到这个类的时候才加载。</p>
+<p>然后利用MetadataReader对象生成一个ScannedGenericBeanDefinition对象，<strong>注意此时的BeanDefinition对象中的beanClass属性存储的是当前类的名字，而不是class对象</strong>。（beanClass属性的类型是Object，它即可以存储类的名字，也可以存储class对象）</p>
+<h3 id="2-合并BeanDefinition"><a href="#2-合并BeanDefinition" class="headerlink" title="2.合并BeanDefinition"></a>2.合并BeanDefinition</h3><p>如果某个BeanDefinition存在父BeanDefinition，那么则要进行合并，递归到往上找到父类，用父类的BeanDefinition新建一个RootBeanDefinition，再用子类的属性覆盖父类的属性。（ 在这个过程中，父类和子类存放在beanDefinitionMap当中的BeanDefinition其实是没有改变的，而是新生成了一个RootBeanDefinition存放在了mergedBeanDefinitions这个map里）</p>
+<h3 id="3-加载类"><a href="#3-加载类" class="headerlink" title="3. 加载类"></a>3. 加载类</h3><p>有了BeanDefinition之后，后续就会基于BeanDefinition去创建Bean，而创建Bean就必须实例化对象，而实例化就必须先加载当前BeanDefinition所对应的class，在AbstractAutowireCapableBeanFactory类的createBean()方法中，一开始就会调用：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Class&lt;?&gt; resolvedClass = resolveBeanClass(mbd, beanName);</span><br></pre></td></tr></table></figure>
+
+
+<p>这行代码就是去加载类，该方法是这么实现的：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (mbd.hasBeanClass()) &#123;</span><br><span class="line">    <span class="keyword">return</span> mbd.getBeanClass();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> AccessController.doPrivileged((PrivilegedExceptionAction&lt;Class&lt;?&gt;&gt;) () -&gt;</span><br><span class="line">        doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> doResolveBeanClass(mbd, typesToMatch);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public boolean hasBeanClass() &#123;</span><br><span class="line">    return (this.beanClass instanceof Class);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果beanClass属性的类型是Class，那么就直接返回，如果不是，则会根据类名进行加载（doResolveBeanClass方法所做的事情）</p>
+<p>会利用BeanFactory所设置的类加载器来加载类，如果没有设置，则默认使用**ClassUtils.getDefaultClassLoader()**所返回的类加载器来加载。</p>
+<h4 id="ClassUtils-getDefaultClassLoader"><a href="#ClassUtils-getDefaultClassLoader" class="headerlink" title="ClassUtils.getDefaultClassLoader()"></a><strong>ClassUtils.getDefaultClassLoader()</strong></h4><ol>
+<li>优先获取当前线程中的ClassLoader</li>
+<li>如果为空，则获取加载ClassUtils类的类加载器（正常情况下，就是AppClassLoader，但是如果是在Tomcat中运行，那么则会是Tomcat中为每个应用所创建的WebappClassLoader）</li>
+<li>如果为空，那么则是bootstrap类加载器加载的ClassUtils类，那则获取系统类加载器进行加载</li>
+</ol>
+<h3 id="4-实例化前"><a href="#4-实例化前" class="headerlink" title="4. 实例化前"></a>4. 实例化前</h3><p>允许第三方可以不按照Spring的正常流程来创建一个Bean。</p>
+<p>可以利用InstantiationAwareBeanPostProcessor的postProcessBeforeInstantiation方法来提前返回一个Bean对象，得到对象后会直接</p>
+<p>跳到进行<strong>Bean初始化</strong>的方法，然后直接结束Bean的生命周期</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">applyBeanPostProcessorsBeforeInstantiation</span><span class="params">(Class&lt;?&gt; beanClass, String beanName)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">      <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">         InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">         Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);</span><br><span class="line">         <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="5-推断构造方法"><a href="#5-推断构造方法" class="headerlink" title="5. 推断构造方法"></a>5. 推断构造方法</h3><p>选择一个合适的构造器用来创建实例对象</p>
+<h3 id="6-实例化"><a href="#6-实例化" class="headerlink" title="6. 实例化"></a>6. 实例化</h3><p>构造方法反射得到一个实例</p>
+<h3 id="7-BeanDefinition的后置处理"><a href="#7-BeanDefinition的后置处理" class="headerlink" title="7. BeanDefinition的后置处理"></a>7. BeanDefinition的后置处理</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">        MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;</span><br><span class="line">        bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里可以处理BeanDefinition，但是此时实例对象已经生成好了，所以修改beanClass已经没用了，但是可以修改PropertyValues，比如：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LubanMergedBeanDefinitionPostProcessor</span> <span class="keyword">implements</span> <span class="title">MergedBeanDefinitionPostProcessor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessMergedBeanDefinition</span><span class="params">(RootBeanDefinition beanDefinition, Class&lt;?&gt; beanType, String beanName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (beanName.equals(<span class="string">&quot;userService&quot;</span>)) &#123;</span><br><span class="line">            <span class="comment">//实例对象已经生成，此时变更没有意义</span></span><br><span class="line">            beanDefinition.setBeanClass(User.class); </span><br><span class="line">            beanDefinition.getPropertyValues().add(<span class="string">&quot;name&quot;</span>,<span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="8-实例化后（填充属性前）"><a href="#8-实例化后（填充属性前）" class="headerlink" title="8. 实例化后（填充属性前）"></a>8. 实例化后（填充属性前）</h3><p>可以自己写一个InstantiationAwareBeanPostProcessor，然后重写postProcessAfterInstantiation方法返回false,那么则不会进行属性填充</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">      <span class="keyword">if</span> (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) &#123;</span><br><span class="line">         <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="9-填充属性"><a href="#9-填充属性" class="headerlink" title="9. 填充属性"></a>9. 填充属性</h3><p>使用Spring自带的Autowired，默认是关闭的(AUTOWIRE_NO)</p>
+<p>其实就是Spring自动的根据某个类中的set方法来找bean</p>
+<ul>
+<li>byName就是根据某个set方法所对应的属性名去找bean</li>
+<li>byType，就是根据某个set方法的参数类型去找bean</li>
+</ul>
+<h3 id="10-填充属性后"><a href="#10-填充属性后" class="headerlink" title="10. 填充属性后"></a>10. 填充属性后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 调用BeanPostProcessor分别解析@Autowired、@Resource、@Value，得到属性值</span></span><br><span class="line">      PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">         <span class="keyword">if</span> (filteredPds == <span class="keyword">null</span>) &#123;</span><br><span class="line">            filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);</span><br><span class="line">         &#125;</span><br><span class="line">         pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);</span><br><span class="line">         <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      pvs = pvsToUse;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>@Autowired注解的 AutowiredAnnotationBeanPostProcessor</p>
+<p>@Resource注解的 CommonAnnotationBeanPostProcessor</p>
+</blockquote>
+<h3 id="11-执行Aware"><a href="#11-执行Aware" class="headerlink" title="11. 执行Aware"></a>11. 执行Aware</h3><ol>
+<li>((BeanNameAware) bean).setBeanName(beanName);</li>
+<li>((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);</li>
+<li>((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.<strong>this</strong>);</li>
+</ol>
+<h3 id="12-初始化前"><a href="#12-初始化前" class="headerlink" title="12. 初始化前"></a>12. 初始化前</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessBeforeInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="13-初始化"><a href="#13-初始化" class="headerlink" title="13. 初始化"></a>13. 初始化</h3><ol>
+<li>((InitializingBean) bean).afterPropertiesSet();</li>
+<li>执行BeanDefinition中指定的初始化方法</li>
+</ol>
+<h3 id="14-初始化后"><a href="#14-初始化后" class="headerlink" title="14. 初始化后"></a>14. 初始化后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessAfterInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="Bean的销毁过程"><a href="#Bean的销毁过程" class="headerlink" title="Bean的销毁过程"></a>Bean的销毁过程</h2><h3 id="1-容器关闭"><a href="#1-容器关闭" class="headerlink" title="1. 容器关闭"></a>1. 容器关闭</h3><h3 id="2-发布ContextClosedEvent事件"><a href="#2-发布ContextClosedEvent事件" class="headerlink" title="2. 发布ContextClosedEvent事件"></a>2. 发布ContextClosedEvent事件</h3><h3 id="3-调用LifecycleProcessor的onClose方法"><a href="#3-调用LifecycleProcessor的onClose方法" class="headerlink" title="3. 调用LifecycleProcessor的onClose方法"></a>3. 调用LifecycleProcessor的onClose方法</h3><h3 id="4-销毁单例Bean"><a href="#4-销毁单例Bean" class="headerlink" title="4. 销毁单例Bean"></a>4. 销毁单例Bean</h3><ol>
+<li>找出所有DisposableBean(实现了DisposableBean接口的Bean)</li>
+<li>遍历每个DisposableBean</li>
+<li>找出依赖了当前DisposableBean的其他Bean，将这些Bean从单例池中移除掉</li>
+<li>调用DisposableBean的destroy()方法</li>
+<li>找到当前DisposableBean所包含的inner beans，将这些Bean从单例池中移除掉 </li>
+</ol>
+<p>这里涉及到一个设计模式：<strong>适配器模式</strong></p>
+<p>在销毁时，Spring会找出实现了DisposableBean接口的Bean。</p>
+<p>但是我们在定义一个Bean时，如果这个Bean实现了DisposableBean接口，或者实现了AutoCloseable接口，或者在BeanDefinition中指定了destroyMethodName，那么这个Bean都属于“DisposableBean”，这些Bean在容器关闭时都要调用相应的销毁方法。</p>
+<p>所以，这里就需要进行适配，将实现了DisposableBean接口、或者AutoCloseable接口等适配成实现了DisposableBean接口，所以就用到了DisposableBeanAdapter，会把实现了AutoCloseable接口的类封装成DisposableBeanAdapter，而DisposableBeanAdapter实现了DisposableBean接口。</p>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
       </tags>
   </entry>
   <entry>
@@ -338,25 +441,6 @@
       <tags>
         <tag>spring</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>Hello World</title>
-    <url>/2021/01/13/hello-world/</url>
-    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>. </p>
-<a id="more"></a>
-
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
-      <categories>
-        <category>Hello</category>
-      </categories>
   </entry>
   <entry>
     <title>理解IO模型与多路复用</title>
