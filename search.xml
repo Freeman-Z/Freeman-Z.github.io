@@ -582,7 +582,7 @@
     <title>Spring依赖注入源码</title>
     <url>/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/</url>
     <content><![CDATA[<p>上节讲了Spring中的自动注入(byName,byType)和@Autowired注解的工作原理以及源码分析，这一节我们来分析剩下的核心的方法：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">@Nullable</span><br><span class="line">Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,</span><br><span class="line">        @Nullable Set&lt;String&gt; autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function">Object <span class="title">resolveDependency</span><span class="params">(DependencyDescriptor descriptor, <span class="meta">@Nullable</span> String requestingBeanName,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="meta">@Nullable</span> Set&lt;String&gt; autowiredBeanNames, <span class="meta">@Nullable</span> TypeConverter typeConverter)</span> <span class="keyword">throws</span> BeansException</span>;</span><br></pre></td></tr></table></figure>
 <p>该方法表示，传入一个依赖描述（DependencyDescriptor），该方法会根据该依赖描述从BeanFactory中找出对应的唯一的一个Bean对象。</p>
 <a id="more"></a>
 
