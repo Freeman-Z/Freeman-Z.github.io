@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="如何理解refresh()？1234567891011&#x2F;**   * Load or refresh the persistent representation of the configuration,   * which might an XML file, properties file, or relational database schema.   * &lt;p&gt;As this">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ApplicationContext启动过程">
+<meta property="og:url" content="http://example.com/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/index.html">
+<meta property="og:site_name" content="Freeman&#39;s blog">
+<meta property="og:description" content="如何理解refresh()？1234567891011&#x2F;**   * Load or refresh the persistent representation of the configuration,   * which might an XML file, properties file, or relational database schema.   * &lt;p&gt;As this">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/AnnotationConfigApplicationContext.jpg">
+<meta property="article:published_time" content="2021-07-04T11:56:03.000Z">
+<meta property="article:modified_time" content="2021-07-04T15:07:10.846Z">
+<meta property="article:author" content="Freeman">
+<meta property="article:tag" content="spring">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/AnnotationConfigApplicationContext.jpg">
+
+<link rel="canonical" href="http://example.com/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ApplicationContext启动过程 | Freeman's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Freeman's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/IMG_7380.JPG">
+      <meta itemprop="name" content="Freeman">
+      <meta itemprop="description" content="done is better than perfect">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Freeman's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ApplicationContext启动过程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-07-04 19:56:03 / 修改时间：23:07:10" itemprop="dateCreated datePublished" datetime="2021-07-04T19:56:03+08:00">2021-07-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="如何理解refresh-？"><a href="#如何理解refresh-？" class="headerlink" title="如何理解refresh()？"></a>如何理解refresh()？</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Load or refresh the persistent representation of the configuration,</span></span><br><span class="line"><span class="comment">   * which might an XML file, properties file, or relational database schema.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;As this is a startup method, it should destroy already created singletons</span></span><br><span class="line"><span class="comment">   * if it fails, to avoid dangling resources. In other words, after invocation</span></span><br><span class="line"><span class="comment">   * of that method, either all or no singletons at all should be instantiated.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> BeansException if the bean factory could not be initialized</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> IllegalStateException if already initialized and multiple refresh</span></span><br><span class="line"><span class="comment">   * attempts are not supported</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException</span>;</span><br></pre></td></tr></table></figure>
+<p>这是ConfigurableApplicationContext接口上refresh()方法的注释，意思是：加载或刷新持久化的配置，可能是XML文件、属性文件或关系数据库中存储的。由于这是一个启动方法，如果失败，它应该销毁已经创建的单例，以避免暂用资源。换句话说，在调用该方法之后，应该实例化所有的单例，或者根本不实例化单例 。</p>
+<a id="more"></a>
+
+<p>有个理念需要注意：<strong>ApplicationContext关闭之后不代表JVM也关闭了，ApplicationContext是属于JVM的，说白了ApplicationContext也是JVM中的一个对象。</strong></p>
+<p>在Spring的设计中，也提供可以刷新的ApplicationContext和不可以刷新的ApplicationContext。比如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AbstractRefreshableApplicationContext extends AbstractApplicationContext</span><br></pre></td></tr></table></figure>
+<p>就是可以刷新的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GenericApplicationContext extends AbstractApplicationContext</span><br></pre></td></tr></table></figure>
+<p>就是不可以刷新的。</p>
+<p>AnnotationConfigApplicationContext继承的是GenericApplicationContext，所以它是不能刷新的。</p>
+<p>AnnotationConfigWebApplicationContext继承的是AbstractRefreshableWebApplicationContext，所以它是可以刷的。</p>
+<p>上面说的<strong>不能刷新是指不能重复刷新，只能调用一次refresh方法，第二次时会报错。</strong></p>
+<h2 id="refresh做了哪些事情？"><a href="#refresh做了哪些事情？" class="headerlink" title="refresh做了哪些事情？"></a>refresh做了哪些事情？</h2><p><img src="/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/AnnotationConfigApplicationContext.jpg" alt="AnnotationConfigApplicationContext"></p>
+<p>下面以AnnotationConfigApplicationContext为例子，来介绍refresh的底层原理。</p>
+<ol>
+<li><p>在调用AnnotationConfigApplicationContext的构造方法之前，会调用父类GenericApplicationContext的无参构造方法，会构造一个BeanFactory，为<strong>DefaultListableBeanFactory</strong>。</p>
+</li>
+<li><p>构造AnnotatedBeanDefinitionReader（<strong>主要作用添加一些基础的PostProcessor，同时可以通过reader进行BeanDefinition的注册</strong>），同时对BeanFactory进行设置和添加<strong>PostProcessor</strong>（后置处理器）</p>
+<ol>
+<li>设置dependencyComparator：AnnotationAwareOrderComparator，它是一个Comparator，是用来进行排序的，会获取某个对象上的<strong>Order注解</strong>或者通过实现<strong>Ordered接口</strong>所定义的值进行排序，在日常开发中可以利用这个类来进行排序。</li>
+<li>设置autowireCandidateResolver：ContextAnnotationAutowireCandidateResolver，用来解析某个Bean能不能进行自动注入，比如某个Bean的autowireCandidate属性是否等于true</li>
+<li>向BeanFactory中添加<strong>ConfigurationClassPostProcessor</strong>对应的BeanDefinition，它是一个BeanDefinitionRegistryPostProcessor，并且实现了PriorityOrdered接口</li>
+<li>向BeanFactory中添加<strong>AutowiredAnnotationBeanPostProcessor</strong>对应的BeanDefinition，它是一个InstantiationAwareBeanPostProcessorAdapter，MergedBeanDefinitionPostProcessor</li>
+<li>向BeanFactory中添加<strong>CommonAnnotationBeanPostProcessor</strong>对应的BeanDefinition，它是一个InstantiationAwareBeanPostProcessor，InitDestroyAnnotationBeanPostProcessor</li>
+<li>向BeanFactory中添加EventListenerMethodProcessor对应的BeanDefinition，它是一个BeanFactoryPostProcessor，SmartInitializingSingleton</li>
+<li>向BeanFactory中添加DefaultEventListenerFactory对应的BeanDefinition，它是一个EventListenerFactory</li>
+</ol>
+</li>
+<li><p>构造ClassPathBeanDefinitionScanner（<strong>主要作用可以用来扫描得到并注册BeanDefinition</strong>），同时进行设置： </p>
+<ol>
+<li>设置<strong>this.includeFilters = AnnotationTypeFilter(**</strong>Component**<strong>.class)</strong></li>
+<li>设置environment</li>
+<li>设置resourceLoader</li>
+</ol>
+</li>
+<li><p> 利用reader注册AppConfig为BeanDefinition，类型为AnnotatedGenericBeanDefinition</p>
+</li>
+<li><p><strong>接下来就是调用refresh方法</strong></p>
+</li>
+<li><p>prepareRefresh()：</p>
+<ol>
+<li>记录启动时间</li>
+<li>可以允许子容器设置一些内容到Environment中</li>
+<li>验证Environment中是否包括了必须要有的属性</li>
+</ol>
+</li>
+<li><p>obtainFreshBeanFactory()：进行BeanFactory的refresh，在这里会去调用子类的refreshBeanFactory方法，具体子类是怎么刷新的得看子类，然后再调用子类的getBeanFactory方法，重新得到一个BeanFactory</p>
+</li>
+<li><p>prepareBeanFactory(beanFactory)：</p>
+<ol>
+<li><p>设置beanFactory的类加载器</p>
+</li>
+<li><p>设置表达式解析器：StandardBeanExpressionResolver，用来解析Spring中的表达式</p>
+</li>
+<li><p>添加PropertyEditorRegistrar：ResourceEditorRegistrar，PropertyEditor类型转化器注册器，用来注册一些默认的PropertyEditor</p>
+</li>
+<li><p>添加一个Bean的后置处理器：ApplicationContextAwareProcessor，是一个BeanPostProcessor，用来执行EnvironmentAware、ApplicationEventPublisherAware等回调方法</p>
+</li>
+<li><p>添加<strong>ignoredDependencyInterface</strong>：可以向这个属性中添加一些接口，如果某个类实现了这个接口，并且这个类中的某些set方法在接口中也存在，那么这个set方法在自动注入的时候是不会执行的，比如EnvironmentAware这个接口，如果某个类实现了这个接口，那么就必须实现它的setEnvironment方法，而这是一个set方法，和Spring中的autowire是冲突的，那么Spring在自动注入时是不会调用setEnvironment方法的，而是等到回调Aware接口时再来调用（注意，这个功能仅限于xml的autowire，@Autowired注解是忽略这个属性的）</p>
+<ol>
+<li><p>EnvironmentAware</p>
+</li>
+<li><p>EmbeddedValueResolverAware</p>
+</li>
+<li><p>ResourceLoaderAware</p>
+</li>
+<li><p>ApplicationEventPublisherAware</p>
+</li>
+<li><p>MessageSourceAware</p>
+</li>
+<li><p>ApplicationContextAware</p>
+<p>另外其实在构造BeanFactory的时候就已经提前添加了另外三个：</p>
+</li>
+<li><p>BeanNameAware</p>
+</li>
+<li><p>BeanClassLoaderAware</p>
+</li>
+<li><p>BeanFactoryAware</p>
+</li>
+</ol>
+</li>
+<li><p>添加<strong>resolvableDependencies</strong>：在byType进行依赖注入时，会先从这个属性中根据类型找bean</p>
+<ol>
+<li>BeanFactory.class：当前BeanFactory对象</li>
+<li>ResourceLoader.class：当前ApplicationContext对象</li>
+<li>ApplicationEventPublisher.class：当前ApplicationContext对象</li>
+<li>ApplicationContext.class：当前ApplicationContext对象</li>
+</ol>
+</li>
+<li><p>添加一个Bean的后置处理器：ApplicationListenerDetector，是一个BeanPostProcessor，用来判断某个Bean是不是ApplicationListener，如果是则把这个Bean添加到ApplicationContext中去，注意一个ApplicationListener只能是单例的</p>
+</li>
+<li><p>添加一个Bean的后置处理器：LoadTimeWeaverAwareProcessor，是一个BeanPostProcessor，用来判断某个Bean是不是实现了LoadTimeWeaverAware接口，如果实现了则把ApplicationContext中的loadTimeWeaver回调setLoadTimeWeaver方法设置给该Bean。</p>
+</li>
+<li><p>添加一些单例bean到单例池：</p>
+<ol>
+<li>“environment”：Environment对象</li>
+<li>“systemProperties”：System.getProperties()返回的Map对象</li>
+<li>“systemEnvironment”：System.getenv()返回的Map对象</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>postProcessBeanFactory(beanFactory) ： 提供给AbstractApplicationContext的子类进行扩展，具体的子类，可以继续向BeanFactory中再添加一些东西</p>
+</li>
+<li><p>invokeBeanFactoryPostProcessors(beanFactory)：<strong>执行BeanFactoryPostProcessor</strong></p>
+<ol>
+<li>此时在BeanFactory中会存在一个BeanFactoryPostProcessor：<strong>ConfigurationClassPostProcessor</strong>，它也是一个<strong>BeanDefinitionRegistryPostProcessor</strong></li>
+<li><strong>第一阶段</strong></li>
+<li>从BeanFactory中找到类型为BeanDefinitionRegistryPostProcessor的beanName，也就是<strong>ConfigurationClassPostProcessor</strong>， 然后调用BeanFactory的getBean方法得到实例对象</li>
+<li>执行<strong>ConfigurationClassPostProcessor的**</strong>postProcessBeanDefinitionRegistry()<strong>方法:</strong><ol>
+<li>解析AppConfig类</li>
+<li>扫描得到BeanDefinition并注册</li>
+<li>解析@Import，@Bean等注解得到BeanDefinition并注册</li>
+<li>详细的看另外的笔记，专门分析了<strong>ConfigurationClassPostProcessor是如何工作的</strong></li>
+<li>在这里，我们只需要知道在这一步会去得到BeanDefinition，而这些BeanDefinition中可能存在BeanFactoryPostProcessor和BeanDefinitionRegistryPostProcessor，所以执行完ConfigurationClassPostProcessor的postProcessBeanDefinitionRegistry()方法后，还需要继续执行其他BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+</ol>
+</li>
+<li>执行其他BeanDefinitionRegistryPostProcessor的**postProcessBeanDefinitionRegistry()**方法<ol>
+<li><strong>执行所有BeanDefinitionRegistryPostProcessor的</strong>postProcessBeanFactory()<strong>方法</strong></li>
+<li>第二阶段**</li>
+<li>从BeanFactory中找到类型为BeanFactoryPostProcessor的beanName，而这些BeanFactoryPostProcessor包括了上面的BeanDefinitionRegistryPostProcessor</li>
+<li>执行还没有执行过的BeanFactoryPostProcessor的**postProcessBeanFactory()**方法</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>到此，所有的BeanFactoryPostProcessor的逻辑都执行完了，主要做的事情就是得到BeanDefinition并注册到BeanFactory</p>
+</li>
+<li><p>registerBeanPostProcessors(beanFactory)：因为上面的步骤完成了扫描，这个过程中程序员可能自己定义了一些BeanPostProcessor，在这一步就会把BeanFactory中所有的BeanPostProcessor找出来并实例化得到一个对象，并添加到BeanFactory中去（属性<strong>beanPostProcessors</strong>），最后再重新添加一个ApplicationListenerDetector对象（之前其实就添加了过，这里是为了把ApplicationListenerDetector移动到最后）</p>
+</li>
+<li><p>initMessageSource()：如果BeanFactory中存在一个叫做”<strong>messageSource</strong>“的BeanDefinition，那么就会把这个Bean对象创建出来并赋值给ApplicationContext的messageSource属性，让ApplicationContext拥有<strong>国际化</strong>的功能</p>
+</li>
+<li><p>initApplicationEventMulticaster()：如果BeanFactory中存在一个叫做”<strong>applicationEventMulticaster</strong>“的BeanDefinition，那么就会把这个Bean对象创建出来并赋值给ApplicationContext的applicationEventMulticaster属性，让ApplicationContext拥有<strong>事件发布</strong>的功能</p>
+</li>
+<li><p>onRefresh()：提供给AbstractApplicationContext的子类进行扩展，没用</p>
+</li>
+<li><p>registerListeners()：从BeanFactory中获取ApplicationListener类型的beanName，然后添加到ApplicationContext中的事件广播器<strong>applicationEventMulticaster</strong>中去，到这一步因为FactoryBean还没有调用getObject()方法生成Bean对象，所以这里要在根据类型找一下ApplicationListener，记录一下对应的beanName</p>
+</li>
+<li><p>finishBeanFactoryInitialization(beanFactory)：完成BeanFactory的初始化，主要就是<strong>实例化非懒加载的单例Bean</strong>，单独的笔记去讲。</p>
+</li>
+<li><p>finishRefresh()：BeanFactory的初始化完后，就到了Spring启动的最后一步了</p>
+<ol>
+<li>设置ApplicationContext的lifecycleProcessor，默认情况下设置的是DefaultLifecycleProcessor</li>
+<li>调用lifecycleProcessor的onRefresh()方法，如果是DefaultLifecycleProcessor，那么会获取所有类型为Lifecycle的Bean对象，然后调用它的start()方法，这就是ApplicationContext的生命周期扩展机制</li>
+<li>发布<strong>ContextRefreshedEvent</strong>事件</li>
+</ol>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spring/" rel="tag"># spring</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/" rel="prev" title="Spring依赖注入源码">
+      <i class="fa fa-chevron-left"></i> Spring依赖注入源码
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" rel="next" title="Spring解析配置类以及扫描源码解析">
+      Spring解析配置类以及扫描源码解析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3refresh-%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">如何理解refresh()？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#refresh%E5%81%9A%E4%BA%86%E5%93%AA%E4%BA%9B%E4%BA%8B%E6%83%85%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">refresh做了哪些事情？</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Freeman"
+      src="/IMG_7380.JPG">
+  <p class="site-author-name" itemprop="name">Freeman</p>
+  <div class="site-description" itemprop="description">done is better than perfect</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">10</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Freeman-Z" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Freeman-Z" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Freeman</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

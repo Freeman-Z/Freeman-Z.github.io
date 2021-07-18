@@ -728,4 +728,219 @@
         <tag>NIO</tag>
       </tags>
   </entry>
+  <entry>
+    <title>ApplicationContext启动过程</title>
+    <url>/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/</url>
+    <content><![CDATA[<h2 id="如何理解refresh-？"><a href="#如何理解refresh-？" class="headerlink" title="如何理解refresh()？"></a>如何理解refresh()？</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Load or refresh the persistent representation of the configuration,</span></span><br><span class="line"><span class="comment">   * which might an XML file, properties file, or relational database schema.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;As this is a startup method, it should destroy already created singletons</span></span><br><span class="line"><span class="comment">   * if it fails, to avoid dangling resources. In other words, after invocation</span></span><br><span class="line"><span class="comment">   * of that method, either all or no singletons at all should be instantiated.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> BeansException if the bean factory could not be initialized</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> IllegalStateException if already initialized and multiple refresh</span></span><br><span class="line"><span class="comment">   * attempts are not supported</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException</span>;</span><br></pre></td></tr></table></figure>
+<p>这是ConfigurableApplicationContext接口上refresh()方法的注释，意思是：加载或刷新持久化的配置，可能是XML文件、属性文件或关系数据库中存储的。由于这是一个启动方法，如果失败，它应该销毁已经创建的单例，以避免暂用资源。换句话说，在调用该方法之后，应该实例化所有的单例，或者根本不实例化单例 。</p>
+<a id="more"></a>
+
+<p>有个理念需要注意：<strong>ApplicationContext关闭之后不代表JVM也关闭了，ApplicationContext是属于JVM的，说白了ApplicationContext也是JVM中的一个对象。</strong></p>
+<p>在Spring的设计中，也提供可以刷新的ApplicationContext和不可以刷新的ApplicationContext。比如：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">AbstractRefreshableApplicationContext extends AbstractApplicationContext</span><br></pre></td></tr></table></figure>
+<p>就是可以刷新的</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">GenericApplicationContext extends AbstractApplicationContext</span><br></pre></td></tr></table></figure>
+<p>就是不可以刷新的。</p>
+<p>AnnotationConfigApplicationContext继承的是GenericApplicationContext，所以它是不能刷新的。</p>
+<p>AnnotationConfigWebApplicationContext继承的是AbstractRefreshableWebApplicationContext，所以它是可以刷的。</p>
+<p>上面说的<strong>不能刷新是指不能重复刷新，只能调用一次refresh方法，第二次时会报错。</strong></p>
+<h2 id="refresh做了哪些事情？"><a href="#refresh做了哪些事情？" class="headerlink" title="refresh做了哪些事情？"></a>refresh做了哪些事情？</h2><p><img src="/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/AnnotationConfigApplicationContext.jpg" alt="AnnotationConfigApplicationContext"></p>
+<p>下面以AnnotationConfigApplicationContext为例子，来介绍refresh的底层原理。</p>
+<ol>
+<li><p>在调用AnnotationConfigApplicationContext的构造方法之前，会调用父类GenericApplicationContext的无参构造方法，会构造一个BeanFactory，为<strong>DefaultListableBeanFactory</strong>。</p>
+</li>
+<li><p>构造AnnotatedBeanDefinitionReader（<strong>主要作用添加一些基础的PostProcessor，同时可以通过reader进行BeanDefinition的注册</strong>），同时对BeanFactory进行设置和添加<strong>PostProcessor</strong>（后置处理器）</p>
+<ol>
+<li>设置dependencyComparator：AnnotationAwareOrderComparator，它是一个Comparator，是用来进行排序的，会获取某个对象上的<strong>Order注解</strong>或者通过实现<strong>Ordered接口</strong>所定义的值进行排序，在日常开发中可以利用这个类来进行排序。</li>
+<li>设置autowireCandidateResolver：ContextAnnotationAutowireCandidateResolver，用来解析某个Bean能不能进行自动注入，比如某个Bean的autowireCandidate属性是否等于true</li>
+<li>向BeanFactory中添加<strong>ConfigurationClassPostProcessor</strong>对应的BeanDefinition，它是一个BeanDefinitionRegistryPostProcessor，并且实现了PriorityOrdered接口</li>
+<li>向BeanFactory中添加<strong>AutowiredAnnotationBeanPostProcessor</strong>对应的BeanDefinition，它是一个InstantiationAwareBeanPostProcessorAdapter，MergedBeanDefinitionPostProcessor</li>
+<li>向BeanFactory中添加<strong>CommonAnnotationBeanPostProcessor</strong>对应的BeanDefinition，它是一个InstantiationAwareBeanPostProcessor，InitDestroyAnnotationBeanPostProcessor</li>
+<li>向BeanFactory中添加EventListenerMethodProcessor对应的BeanDefinition，它是一个BeanFactoryPostProcessor，SmartInitializingSingleton</li>
+<li>向BeanFactory中添加DefaultEventListenerFactory对应的BeanDefinition，它是一个EventListenerFactory</li>
+</ol>
+</li>
+<li><p>构造ClassPathBeanDefinitionScanner（<strong>主要作用可以用来扫描得到并注册BeanDefinition</strong>），同时进行设置： </p>
+<ol>
+<li>设置<strong>this.includeFilters = AnnotationTypeFilter(**</strong>Component**<strong>.class)</strong></li>
+<li>设置environment</li>
+<li>设置resourceLoader</li>
+</ol>
+</li>
+<li><p> 利用reader注册AppConfig为BeanDefinition，类型为AnnotatedGenericBeanDefinition</p>
+</li>
+<li><p><strong>接下来就是调用refresh方法</strong></p>
+</li>
+<li><p>prepareRefresh()：</p>
+<ol>
+<li>记录启动时间</li>
+<li>可以允许子容器设置一些内容到Environment中</li>
+<li>验证Environment中是否包括了必须要有的属性</li>
+</ol>
+</li>
+<li><p>obtainFreshBeanFactory()：进行BeanFactory的refresh，在这里会去调用子类的refreshBeanFactory方法，具体子类是怎么刷新的得看子类，然后再调用子类的getBeanFactory方法，重新得到一个BeanFactory</p>
+</li>
+<li><p>prepareBeanFactory(beanFactory)：</p>
+<ol>
+<li><p>设置beanFactory的类加载器</p>
+</li>
+<li><p>设置表达式解析器：StandardBeanExpressionResolver，用来解析Spring中的表达式</p>
+</li>
+<li><p>添加PropertyEditorRegistrar：ResourceEditorRegistrar，PropertyEditor类型转化器注册器，用来注册一些默认的PropertyEditor</p>
+</li>
+<li><p>添加一个Bean的后置处理器：ApplicationContextAwareProcessor，是一个BeanPostProcessor，用来执行EnvironmentAware、ApplicationEventPublisherAware等回调方法</p>
+</li>
+<li><p>添加<strong>ignoredDependencyInterface</strong>：可以向这个属性中添加一些接口，如果某个类实现了这个接口，并且这个类中的某些set方法在接口中也存在，那么这个set方法在自动注入的时候是不会执行的，比如EnvironmentAware这个接口，如果某个类实现了这个接口，那么就必须实现它的setEnvironment方法，而这是一个set方法，和Spring中的autowire是冲突的，那么Spring在自动注入时是不会调用setEnvironment方法的，而是等到回调Aware接口时再来调用（注意，这个功能仅限于xml的autowire，@Autowired注解是忽略这个属性的）</p>
+<ol>
+<li><p>EnvironmentAware</p>
+</li>
+<li><p>EmbeddedValueResolverAware</p>
+</li>
+<li><p>ResourceLoaderAware</p>
+</li>
+<li><p>ApplicationEventPublisherAware</p>
+</li>
+<li><p>MessageSourceAware</p>
+</li>
+<li><p>ApplicationContextAware</p>
+<p>另外其实在构造BeanFactory的时候就已经提前添加了另外三个：</p>
+</li>
+<li><p>BeanNameAware</p>
+</li>
+<li><p>BeanClassLoaderAware</p>
+</li>
+<li><p>BeanFactoryAware</p>
+</li>
+</ol>
+</li>
+<li><p>添加<strong>resolvableDependencies</strong>：在byType进行依赖注入时，会先从这个属性中根据类型找bean</p>
+<ol>
+<li>BeanFactory.class：当前BeanFactory对象</li>
+<li>ResourceLoader.class：当前ApplicationContext对象</li>
+<li>ApplicationEventPublisher.class：当前ApplicationContext对象</li>
+<li>ApplicationContext.class：当前ApplicationContext对象</li>
+</ol>
+</li>
+<li><p>添加一个Bean的后置处理器：ApplicationListenerDetector，是一个BeanPostProcessor，用来判断某个Bean是不是ApplicationListener，如果是则把这个Bean添加到ApplicationContext中去，注意一个ApplicationListener只能是单例的</p>
+</li>
+<li><p>添加一个Bean的后置处理器：LoadTimeWeaverAwareProcessor，是一个BeanPostProcessor，用来判断某个Bean是不是实现了LoadTimeWeaverAware接口，如果实现了则把ApplicationContext中的loadTimeWeaver回调setLoadTimeWeaver方法设置给该Bean。</p>
+</li>
+<li><p>添加一些单例bean到单例池：</p>
+<ol>
+<li>“environment”：Environment对象</li>
+<li>“systemProperties”：System.getProperties()返回的Map对象</li>
+<li>“systemEnvironment”：System.getenv()返回的Map对象</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>postProcessBeanFactory(beanFactory) ： 提供给AbstractApplicationContext的子类进行扩展，具体的子类，可以继续向BeanFactory中再添加一些东西</p>
+</li>
+<li><p>invokeBeanFactoryPostProcessors(beanFactory)：<strong>执行BeanFactoryPostProcessor</strong></p>
+<ol>
+<li>此时在BeanFactory中会存在一个BeanFactoryPostProcessor：<strong>ConfigurationClassPostProcessor</strong>，它也是一个<strong>BeanDefinitionRegistryPostProcessor</strong></li>
+<li><strong>第一阶段</strong></li>
+<li>从BeanFactory中找到类型为BeanDefinitionRegistryPostProcessor的beanName，也就是<strong>ConfigurationClassPostProcessor</strong>， 然后调用BeanFactory的getBean方法得到实例对象</li>
+<li>执行<strong>ConfigurationClassPostProcessor的**</strong>postProcessBeanDefinitionRegistry()<strong>方法:</strong><ol>
+<li>解析AppConfig类</li>
+<li>扫描得到BeanDefinition并注册</li>
+<li>解析@Import，@Bean等注解得到BeanDefinition并注册</li>
+<li>详细的看另外的笔记，专门分析了<strong>ConfigurationClassPostProcessor是如何工作的</strong></li>
+<li>在这里，我们只需要知道在这一步会去得到BeanDefinition，而这些BeanDefinition中可能存在BeanFactoryPostProcessor和BeanDefinitionRegistryPostProcessor，所以执行完ConfigurationClassPostProcessor的postProcessBeanDefinitionRegistry()方法后，还需要继续执行其他BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+</ol>
+</li>
+<li>执行其他BeanDefinitionRegistryPostProcessor的**postProcessBeanDefinitionRegistry()**方法<ol>
+<li><strong>执行所有BeanDefinitionRegistryPostProcessor的</strong>postProcessBeanFactory()<strong>方法</strong></li>
+<li>第二阶段**</li>
+<li>从BeanFactory中找到类型为BeanFactoryPostProcessor的beanName，而这些BeanFactoryPostProcessor包括了上面的BeanDefinitionRegistryPostProcessor</li>
+<li>执行还没有执行过的BeanFactoryPostProcessor的**postProcessBeanFactory()**方法</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>到此，所有的BeanFactoryPostProcessor的逻辑都执行完了，主要做的事情就是得到BeanDefinition并注册到BeanFactory</p>
+</li>
+<li><p>registerBeanPostProcessors(beanFactory)：因为上面的步骤完成了扫描，这个过程中程序员可能自己定义了一些BeanPostProcessor，在这一步就会把BeanFactory中所有的BeanPostProcessor找出来并实例化得到一个对象，并添加到BeanFactory中去（属性<strong>beanPostProcessors</strong>），最后再重新添加一个ApplicationListenerDetector对象（之前其实就添加了过，这里是为了把ApplicationListenerDetector移动到最后）</p>
+</li>
+<li><p>initMessageSource()：如果BeanFactory中存在一个叫做”<strong>messageSource</strong>“的BeanDefinition，那么就会把这个Bean对象创建出来并赋值给ApplicationContext的messageSource属性，让ApplicationContext拥有<strong>国际化</strong>的功能</p>
+</li>
+<li><p>initApplicationEventMulticaster()：如果BeanFactory中存在一个叫做”<strong>applicationEventMulticaster</strong>“的BeanDefinition，那么就会把这个Bean对象创建出来并赋值给ApplicationContext的applicationEventMulticaster属性，让ApplicationContext拥有<strong>事件发布</strong>的功能</p>
+</li>
+<li><p>onRefresh()：提供给AbstractApplicationContext的子类进行扩展，没用</p>
+</li>
+<li><p>registerListeners()：从BeanFactory中获取ApplicationListener类型的beanName，然后添加到ApplicationContext中的事件广播器<strong>applicationEventMulticaster</strong>中去，到这一步因为FactoryBean还没有调用getObject()方法生成Bean对象，所以这里要在根据类型找一下ApplicationListener，记录一下对应的beanName</p>
+</li>
+<li><p>finishBeanFactoryInitialization(beanFactory)：完成BeanFactory的初始化，主要就是<strong>实例化非懒加载的单例Bean</strong>，单独的笔记去讲。</p>
+</li>
+<li><p>finishRefresh()：BeanFactory的初始化完后，就到了Spring启动的最后一步了</p>
+<ol>
+<li>设置ApplicationContext的lifecycleProcessor，默认情况下设置的是DefaultLifecycleProcessor</li>
+<li>调用lifecycleProcessor的onRefresh()方法，如果是DefaultLifecycleProcessor，那么会获取所有类型为Lifecycle的Bean对象，然后调用它的start()方法，这就是ApplicationContext的生命周期扩展机制</li>
+<li>发布<strong>ContextRefreshedEvent</strong>事件</li>
+</ol>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring解析配置类以及扫描源码解析</title>
+    <url>/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
+    <content><![CDATA[<h2 id="执行BeanFactoryPostProcessor"><a href="#执行BeanFactoryPostProcessor" class="headerlink" title="执行BeanFactoryPostProcessor"></a>执行BeanFactoryPostProcessor</h2><ol>
+<li>执行通过ApplicationContext添加进来的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中实现了PriorityOrdered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中实现了Ordered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中其他的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行上面所有的BeanDefinitionRegistryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行通过ApplicationContext添加进来的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中实现了PriorityOrdered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中实现了Ordered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中其他的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="ConfigurationClassPostProcessor执行流程"><a href="#ConfigurationClassPostProcessor执行流程" class="headerlink" title="## ConfigurationClassPostProcessor执行流程"></a>## ConfigurationClassPostProcessor执行流程</h2><p><img src="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg" alt="ConfigurationBeanPostProsessor"></p>
+<ol>
+<li>启动Spring时，需要传入一个AppConfig.class给ApplicationContext，ApplicationContext会根据AppConfig类封装成一个BeanDefinition，这种BeanDefinition我们把它称为配置类BeanDefinition。</li>
+<li>ConfigurationClassClassProcessor中会把配置类BeanDefinition取出来</li>
+<li>构建一个ConfigurationClassParser用来解析配置类BeanDefinition，并且会生成一个配置类对象ConfigurationClass</li>
+<li>如果配置类中存在@Component注解，那么解析配置类中的内部类（如果内部类也是配置类，会递归）</li>
+<li>如果配置类上存在@PropertySource注解，那么则解析该注解，并得到PropertySource对象，并添加到environment中去</li>
+<li>如果配置类上存在@ConponentScan注解，那么解析改注解，进行扫描，得到BeanDefinition集合，然后判断这些BeanDefinition是不是也是配置类（只要存在@Component注解的就是配置类，所以扫描出来的基本都是配置类），如果是配置类则继续解析该配置类（递归），并且会生成对应的ConfigurationClass</li>
+<li>如果配置类上存在@Import注解，那么判断import进来的类的类型：<ol>
+<li>如果类型是ImportSelector，那么调用执行selectImports方法的到类名，然后把这个类当做配置类进行解析（递归）</li>
+<li>如果类型是ImportBeanDefinitionRegistrar，那么则生成一个ImportBeanDefinitionRegistrar实例对象，并添加到配置类中的importBeanDefinitionRegistrars属性中</li>
+<li>否则继续解析该配置类（递归）</li>
+</ol>
+</li>
+<li>如果配置类存在@ImporResource注解，那么则把导入进来的资源路径存在配置类对象中的importedResources属性中</li>
+<li>如果配置类上存在@Bean的方法，那么则把这些方法封装为BeanMethod对象，并添加到配置类对象中的beanMethod属性中</li>
+<li>如果配置类实现了某些接口，看这些接口内是否定义了@Bean的默认方法</li>
+<li>如果配置类有父类，则把父类当做配置类解析</li>
+<li>AppConfig这个类会对应一个ConfigurationClass，同时在解析的过程中也会生成另外的一些ConfigurationClass，接下来就利用reader来进一步解析ConfigurationClass<ol>
+<li>如果ConfigurationClass是通过@Import注解导入进来的，则把这个类生成一个BeanDefinition，同时解析这个类上@Scope,@Lazy等注解信息，并注册BeanDefinition</li>
+<li>如果ConfigurationClass中存在一些BeanMethod,也就是定义了@Bean，那么则解析这些@Bean，并生成对应的BeanDefinition，并注册</li>
+<li>如果ConfigurationClass中导入了一些资源文件，比如xx.xml，那么则解析这些xx.xml文件，得到并注册BeanDefinition</li>
+<li>如果ConfigurationClass中导入了一些ImportBeanDefinitionRegistrar，那么则执行对应的registerBeanDefinitions进行BeanDefinition的注册</li>
+</ol>
+</li>
+</ol>
+<h2 id="总结一下"><a href="#总结一下" class="headerlink" title="总结一下"></a>总结一下</h2><ol>
+<li>解析Appconfig类，并生成对应的ConfigurationClass</li>
+<li>扫描得到对应的BeanDefinition，同时这些类也是ConfigurationClass，再次解析</li>
+<li>解析ConfigurationClass的其他信息，例如@Import注解等</li>
+</ol>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
 </search>

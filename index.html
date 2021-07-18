@@ -185,6 +185,173 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/IMG_7380.JPG">
+      <meta itemprop="name" content="Freeman">
+      <meta itemprop="description" content="done is better than perfect">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Freeman's blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-title-link" itemprop="url">Spring解析配置类以及扫描源码解析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-07-12 01:29:26" itemprop="dateCreated datePublished" datetime="2021-07-12T01:29:26+08:00">2021-07-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-07-19 00:19:59" itemprop="dateModified" datetime="2021-07-19T00:19:59+08:00">2021-07-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="执行BeanFactoryPostProcessor"><a href="#执行BeanFactoryPostProcessor" class="headerlink" title="执行BeanFactoryPostProcessor"></a>执行BeanFactoryPostProcessor</h2><ol>
+<li>执行通过ApplicationContext添加进来的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中实现了PriorityOrdered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中实现了Ordered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中其他的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行上面所有的BeanDefinitionRegistryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行通过ApplicationContext添加进来的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中实现了PriorityOrdered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中实现了Ordered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中其他的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+</ol>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/IMG_7380.JPG">
+      <meta itemprop="name" content="Freeman">
+      <meta itemprop="description" content="done is better than perfect">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Freeman's blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" class="post-title-link" itemprop="url">ApplicationContext启动过程</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-07-04 19:56:03 / 修改时间：23:07:10" itemprop="dateCreated datePublished" datetime="2021-07-04T19:56:03+08:00">2021-07-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="如何理解refresh-？"><a href="#如何理解refresh-？" class="headerlink" title="如何理解refresh()？"></a>如何理解refresh()？</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Load or refresh the persistent representation of the configuration,</span></span><br><span class="line"><span class="comment">   * which might an XML file, properties file, or relational database schema.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;As this is a startup method, it should destroy already created singletons</span></span><br><span class="line"><span class="comment">   * if it fails, to avoid dangling resources. In other words, after invocation</span></span><br><span class="line"><span class="comment">   * of that method, either all or no singletons at all should be instantiated.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> BeansException if the bean factory could not be initialized</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> IllegalStateException if already initialized and multiple refresh</span></span><br><span class="line"><span class="comment">   * attempts are not supported</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException</span>;</span><br></pre></td></tr></table></figure>
+<p>这是ConfigurableApplicationContext接口上refresh()方法的注释，意思是：加载或刷新持久化的配置，可能是XML文件、属性文件或关系数据库中存储的。由于这是一个启动方法，如果失败，它应该销毁已经创建的单例，以避免暂用资源。换句话说，在调用该方法之后，应该实例化所有的单例，或者根本不实例化单例 。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -920,7 +1087,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-count">10</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

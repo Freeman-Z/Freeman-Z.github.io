@@ -20,23 +20,22 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="Netty高并发高性能架构设计精髓 主从Reactor模型  NIO多路复用非阻塞  无锁串行化思想  支持高性能序列化协议  零拷贝（直接内存的使用）  ByteBuf内存池设计  灵活的TCP参数配置能力  并发优化">
+  <meta name="description" content="执行BeanFactoryPostProcessor 执行通过ApplicationContext添加进来的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法 执行BeanFactory中实现了PriorityOrdered接口的BeanDefinitionRegistryPostProcessor的p">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Netty核心源码解析">
-<meta property="og:url" content="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/index.html">
+<meta property="og:title" content="Spring解析配置类以及扫描源码解析">
+<meta property="og:url" content="http://example.com/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/index.html">
 <meta property="og:site_name" content="Freeman&#39;s blog">
-<meta property="og:description" content="Netty高并发高性能架构设计精髓 主从Reactor模型  NIO多路复用非阻塞  无锁串行化思想  支持高性能序列化协议  零拷贝（直接内存的使用）  ByteBuf内存池设计  灵活的TCP参数配置能力  并发优化">
+<meta property="og:description" content="执行BeanFactoryPostProcessor 执行通过ApplicationContext添加进来的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法 执行BeanFactory中实现了PriorityOrdered接口的BeanDefinitionRegistryPostProcessor的p">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png">
-<meta property="og:image" content="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg">
-<meta property="article:published_time" content="2021-02-12T16:12:53.000Z">
-<meta property="article:modified_time" content="2021-06-05T15:40:29.312Z">
+<meta property="og:image" content="http://example.com/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg">
+<meta property="article:published_time" content="2021-07-11T17:29:26.000Z">
+<meta property="article:modified_time" content="2021-07-18T16:19:59.123Z">
 <meta property="article:author" content="Freeman">
-<meta property="article:tag" content="netty">
+<meta property="article:tag" content="spring">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png">
+<meta name="twitter:image" content="http://example.com/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg">
 
-<link rel="canonical" href="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
+<link rel="canonical" href="http://example.com/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
 
 
 <script id="page-configurations">
@@ -49,7 +48,7 @@
   };
 </script>
 
-  <title>Netty核心源码解析 | Freeman's blog</title>
+  <title>Spring解析配置类以及扫描源码解析 | Freeman's blog</title>
   
 
 
@@ -192,7 +191,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/IMG_7380.JPG">
@@ -205,7 +204,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Netty核心源码解析
+          Spring解析配置类以及扫描源码解析
         </h1>
 
         <div class="post-meta">
@@ -215,14 +214,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-02-13 00:12:53" itemprop="dateCreated datePublished" datetime="2021-02-13T00:12:53+08:00">2021-02-13</time>
+              <time title="创建时间：2021-07-12 01:29:26" itemprop="dateCreated datePublished" datetime="2021-07-12T01:29:26+08:00">2021-07-12</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-06-05 23:40:29" itemprop="dateModified" datetime="2021-06-05T23:40:29+08:00">2021-06-05</time>
+                <time title="修改时间：2021-07-19 00:19:59" itemprop="dateModified" datetime="2021-07-19T00:19:59+08:00">2021-07-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -230,7 +229,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">分布式框架</span></a>
+                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
                 </span>
             </span>
 
@@ -245,31 +244,50 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
-<li><p>主从Reactor模型</p>
-</li>
-<li><p>NIO多路复用非阻塞</p>
-</li>
-<li><p>无锁串行化思想</p>
-</li>
-<li><p>支持高性能序列化协议</p>
-</li>
-<li><p>零拷贝（直接内存的使用）</p>
-</li>
-<li><p>ByteBuf内存池设计</p>
-</li>
-<li><p>灵活的TCP参数配置能力</p>
-</li>
-<li><p>并发优化</p>
+        <h2 id="执行BeanFactoryPostProcessor"><a href="#执行BeanFactoryPostProcessor" class="headerlink" title="执行BeanFactoryPostProcessor"></a>执行BeanFactoryPostProcessor</h2><ol>
+<li>执行通过ApplicationContext添加进来的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中实现了PriorityOrdered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中实现了Ordered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中其他的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行上面所有的BeanDefinitionRegistryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行通过ApplicationContext添加进来的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中实现了PriorityOrdered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中实现了Ordered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中其他的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+</ol>
 <a id="more"></a>
 
+<h2 id="ConfigurationClassPostProcessor执行流程"><a href="#ConfigurationClassPostProcessor执行流程" class="headerlink" title="## ConfigurationClassPostProcessor执行流程"></a>## ConfigurationClassPostProcessor执行流程</h2><p><img src="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg" alt="ConfigurationBeanPostProsessor"></p>
+<ol>
+<li>启动Spring时，需要传入一个AppConfig.class给ApplicationContext，ApplicationContext会根据AppConfig类封装成一个BeanDefinition，这种BeanDefinition我们把它称为配置类BeanDefinition。</li>
+<li>ConfigurationClassClassProcessor中会把配置类BeanDefinition取出来</li>
+<li>构建一个ConfigurationClassParser用来解析配置类BeanDefinition，并且会生成一个配置类对象ConfigurationClass</li>
+<li>如果配置类中存在@Component注解，那么解析配置类中的内部类（如果内部类也是配置类，会递归）</li>
+<li>如果配置类上存在@PropertySource注解，那么则解析该注解，并得到PropertySource对象，并添加到environment中去</li>
+<li>如果配置类上存在@ConponentScan注解，那么解析改注解，进行扫描，得到BeanDefinition集合，然后判断这些BeanDefinition是不是也是配置类（只要存在@Component注解的就是配置类，所以扫描出来的基本都是配置类），如果是配置类则继续解析该配置类（递归），并且会生成对应的ConfigurationClass</li>
+<li>如果配置类上存在@Import注解，那么判断import进来的类的类型：<ol>
+<li>如果类型是ImportSelector，那么调用执行selectImports方法的到类名，然后把这个类当做配置类进行解析（递归）</li>
+<li>如果类型是ImportBeanDefinitionRegistrar，那么则生成一个ImportBeanDefinitionRegistrar实例对象，并添加到配置类中的importBeanDefinitionRegistrars属性中</li>
+<li>否则继续解析该配置类（递归）</li>
+</ol>
 </li>
-</ul>
-<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
-<!-- more -->
-
-<h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a target="_blank" rel="noopener" href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
-<p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
+<li>如果配置类存在@ImporResource注解，那么则把导入进来的资源路径存在配置类对象中的importedResources属性中</li>
+<li>如果配置类上存在@Bean的方法，那么则把这些方法封装为BeanMethod对象，并添加到配置类对象中的beanMethod属性中</li>
+<li>如果配置类实现了某些接口，看这些接口内是否定义了@Bean的默认方法</li>
+<li>如果配置类有父类，则把父类当做配置类解析</li>
+<li>AppConfig这个类会对应一个ConfigurationClass，同时在解析的过程中也会生成另外的一些ConfigurationClass，接下来就利用reader来进一步解析ConfigurationClass<ol>
+<li>如果ConfigurationClass是通过@Import注解导入进来的，则把这个类生成一个BeanDefinition，同时解析这个类上@Scope,@Lazy等注解信息，并注册BeanDefinition</li>
+<li>如果ConfigurationClass中存在一些BeanMethod,也就是定义了@Bean，那么则解析这些@Bean，并生成对应的BeanDefinition，并注册</li>
+<li>如果ConfigurationClass中导入了一些资源文件，比如xx.xml，那么则解析这些xx.xml文件，得到并注册BeanDefinition</li>
+<li>如果ConfigurationClass中导入了一些ImportBeanDefinitionRegistrar，那么则执行对应的registerBeanDefinitions进行BeanDefinition的注册</li>
+</ol>
+</li>
+</ol>
+<h2 id="总结一下"><a href="#总结一下" class="headerlink" title="总结一下"></a>总结一下</h2><ol>
+<li>解析Appconfig类，并生成对应的ConfigurationClass</li>
+<li>扫描得到对应的BeanDefinition，同时这些类也是ConfigurationClass，再次解析</li>
+<li>解析ConfigurationClass的其他信息，例如@Import注解等</li>
+</ol>
 
     </div>
 
@@ -279,7 +297,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/netty/" rel="tag"># netty</a>
+              <a href="/tags/spring/" rel="tag"># spring</a>
           </div>
 
         
@@ -288,13 +306,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/" rel="prev" title="Netty编解码&粘包拆包&心跳机制&断线自动重连">
-      <i class="fa fa-chevron-left"></i> Netty编解码&粘包拆包&心跳机制&断线自动重连
+    <a href="/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" rel="prev" title="ApplicationContext启动过程">
+      <i class="fa fa-chevron-left"></i> ApplicationContext启动过程
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/" rel="next" title="Spring中的核心概念">
-      Spring中的核心概念 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -353,7 +368,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty%E9%AB%98%E5%B9%B6%E5%8F%91%E9%AB%98%E6%80%A7%E8%83%BD%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%E7%B2%BE%E9%AB%93"><span class="nav-number">1.</span> <span class="nav-text">Netty高并发高性能架构设计精髓</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E5%9B%BE"><span class="nav-number">2.</span> <span class="nav-text">Netty线程模型图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">3.</span> <span class="nav-text">Netty核心源码流程图</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%A7%E8%A1%8CBeanFactoryPostProcessor"><span class="nav-number">1.</span> <span class="nav-text">执行BeanFactoryPostProcessor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ConfigurationClassPostProcessor%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">## ConfigurationClassPostProcessor执行流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E4%B8%80%E4%B8%8B"><span class="nav-number">3.</span> <span class="nav-text">总结一下</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
