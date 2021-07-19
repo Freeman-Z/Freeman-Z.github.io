@@ -274,6 +274,42 @@
       </tags>
   </entry>
   <entry>
+    <title>Netty核心源码解析</title>
+    <url>/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
+    <content><![CDATA[<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
+<li><p>主从Reactor模型</p>
+</li>
+<li><p>NIO多路复用非阻塞</p>
+</li>
+<li><p>无锁串行化思想</p>
+</li>
+<li><p>支持高性能序列化协议</p>
+</li>
+<li><p>零拷贝（直接内存的使用）</p>
+</li>
+<li><p>ByteBuf内存池设计</p>
+</li>
+<li><p>灵活的TCP参数配置能力</p>
+</li>
+<li><p>并发优化</p>
+<a id="more"></a>
+
+</li>
+</ul>
+<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
+<!-- more -->
+
+<h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
+<p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
+]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
+        <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Netty编解码&amp;粘包拆包&amp;心跳机制&amp;断线自动重连</title>
     <url>/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/</url>
     <content><![CDATA[<h3 id="Netty编解码"><a href="#Netty编解码" class="headerlink" title="Netty编解码"></a>Netty编解码</h3><p>Netty涉及到编解码的组件有Channel、ChannelHandler、ChannelPipe等</p>
@@ -351,69 +387,6 @@
       </categories>
       <tags>
         <tag>netty</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Netty核心源码解析</title>
-    <url>/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
-    <content><![CDATA[<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
-<li><p>主从Reactor模型</p>
-</li>
-<li><p>NIO多路复用非阻塞</p>
-</li>
-<li><p>无锁串行化思想</p>
-</li>
-<li><p>支持高性能序列化协议</p>
-</li>
-<li><p>零拷贝（直接内存的使用）</p>
-</li>
-<li><p>ByteBuf内存池设计</p>
-</li>
-<li><p>灵活的TCP参数配置能力</p>
-</li>
-<li><p>并发优化</p>
-<a id="more"></a>
-
-</li>
-</ul>
-<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
-<!-- more -->
-
-<h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
-<p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
-]]></content>
-      <categories>
-        <category>分布式框架</category>
-      </categories>
-      <tags>
-        <tag>netty</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Spring依赖注入源码</title>
-    <url>/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/</url>
-    <content><![CDATA[<p>上节讲了Spring中的自动注入(byName,byType)和@Autowired注解的工作原理以及源码分析，这一节我们来分析剩下的核心的方法：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function">Object <span class="title">resolveDependency</span><span class="params">(DependencyDescriptor descriptor, <span class="meta">@Nullable</span> String requestingBeanName,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="meta">@Nullable</span> Set&lt;String&gt; autowiredBeanNames, <span class="meta">@Nullable</span> TypeConverter typeConverter)</span> <span class="keyword">throws</span> BeansException</span>;</span><br></pre></td></tr></table></figure>
-<p>该方法表示，传入一个依赖描述（DependencyDescriptor），该方法会根据该依赖描述从BeanFactory中找出对应的唯一的一个Bean对象。</p>
-<a id="more"></a>
-
-<p>下面来分析一下<strong>DefaultListableBeanFactory</strong>中**resolveDependency()**方法的具体实现。</p>
-<p><img src="/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/resolveDependency%E6%B5%81%E7%A8%8B.jpg" alt="resolveDependency流程"></p>
-<h2 id="findAutowireCandidates-实现"><a href="#findAutowireCandidates-实现" class="headerlink" title="findAutowireCandidates()实现"></a>findAutowireCandidates()实现</h2><ol>
-<li>找出BeanFactory中类型为type的所有的Bean的名字，注意是名字，而不是Bean对象，因为我们可以根据BeanDefinition就能判断和当前type是不是匹配</li>
-<li>把resolvableDependencies中key为type的对象找出来并添加到result中</li>
-<li>遍历根据type找出的beanName，判断当前beanName对应的Bean是不是能够被自动注入</li>
-<li>先判断beanName对应的BeanDefinition中的autowireCandidate属性，如果为false，表示不能用来进行自动注入，如果为true则继续进行判断</li>
-<li>判断当前type是不是泛型，如果是泛型是会把容器中所有的beanName找出来的，如果是这种情况，那么在这一步中就要获取到泛型的真正类型，然后进行匹配，如果当前beanName和当前泛型对应的真实类型匹配，那么则继续判断</li>
-<li>如果当前DependencyDescriptor上存在@Qualifier注解，那么则要判断当前beanName上是否定义了Qualifier，并且是否和当前DependencyDescriptor上的Qualifier相等，相等则匹配</li>
-<li>经过上述验证之后，当前beanName才能成为一个可注入的，添加到result中</li>
-</ol>
-]]></content>
-      <categories>
-        <category>框架源码</category>
-      </categories>
-      <tags>
-        <tag>spring</tag>
       </tags>
   </entry>
   <entry>
@@ -640,6 +613,61 @@
       </tags>
   </entry>
   <entry>
+    <title>Spring解析配置类以及扫描源码解析</title>
+    <url>/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
+    <content><![CDATA[<h2 id="执行BeanFactoryPostProcessor"><a href="#执行BeanFactoryPostProcessor" class="headerlink" title="执行BeanFactoryPostProcessor"></a>执行BeanFactoryPostProcessor</h2><ol>
+<li>执行通过ApplicationContext添加进来的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中实现了PriorityOrdered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中实现了Ordered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行BeanFactory中其他的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
+<li>执行上面所有的BeanDefinitionRegistryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行通过ApplicationContext添加进来的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中实现了PriorityOrdered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中实现了Ordered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+<li>执行BeanFactory中其他的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="ConfigurationClassPostProcessor执行流程"><a href="#ConfigurationClassPostProcessor执行流程" class="headerlink" title="## ConfigurationClassPostProcessor执行流程"></a>## ConfigurationClassPostProcessor执行流程</h2><p><img src="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg" alt="ConfigurationBeanPostProsessor"></p>
+<ol>
+<li>启动Spring时，需要传入一个AppConfig.class给ApplicationContext，ApplicationContext会根据AppConfig类封装成一个BeanDefinition，这种BeanDefinition我们把它称为配置类BeanDefinition。</li>
+<li>ConfigurationClassClassProcessor中会把配置类BeanDefinition取出来</li>
+<li>构建一个ConfigurationClassParser用来解析配置类BeanDefinition，并且会生成一个配置类对象ConfigurationClass</li>
+<li>如果配置类中存在@Component注解，那么解析配置类中的内部类（如果内部类也是配置类，会递归）</li>
+<li>如果配置类上存在@PropertySource注解，那么则解析该注解，并得到PropertySource对象，并添加到environment中去</li>
+<li>如果配置类上存在@ConponentScan注解，那么解析改注解，进行扫描，得到BeanDefinition集合，然后判断这些BeanDefinition是不是也是配置类（只要存在@Component注解的就是配置类，所以扫描出来的基本都是配置类），如果是配置类则继续解析该配置类（递归），并且会生成对应的ConfigurationClass</li>
+<li>如果配置类上存在@Import注解，那么判断import进来的类的类型：<ol>
+<li>如果类型是ImportSelector，那么调用执行selectImports方法的到类名，然后把这个类当做配置类进行解析（递归）</li>
+<li>如果类型是ImportBeanDefinitionRegistrar，那么则生成一个ImportBeanDefinitionRegistrar实例对象，并添加到配置类中的importBeanDefinitionRegistrars属性中</li>
+<li>否则继续解析该配置类（递归）</li>
+</ol>
+</li>
+<li>如果配置类存在@ImporResource注解，那么则把导入进来的资源路径存在配置类对象中的importedResources属性中</li>
+<li>如果配置类上存在@Bean的方法，那么则把这些方法封装为BeanMethod对象，并添加到配置类对象中的beanMethod属性中</li>
+<li>如果配置类实现了某些接口，看这些接口内是否定义了@Bean的默认方法</li>
+<li>如果配置类有父类，则把父类当做配置类解析</li>
+<li>AppConfig这个类会对应一个ConfigurationClass，同时在解析的过程中也会生成另外的一些ConfigurationClass，接下来就利用reader来进一步解析ConfigurationClass<ol>
+<li>如果ConfigurationClass是通过@Import注解导入进来的，则把这个类生成一个BeanDefinition，同时解析这个类上@Scope,@Lazy等注解信息，并注册BeanDefinition</li>
+<li>如果ConfigurationClass中存在一些BeanMethod,也就是定义了@Bean，那么则解析这些@Bean，并生成对应的BeanDefinition，并注册</li>
+<li>如果ConfigurationClass中导入了一些资源文件，比如xx.xml，那么则解析这些xx.xml文件，得到并注册BeanDefinition</li>
+<li>如果ConfigurationClass中导入了一些ImportBeanDefinitionRegistrar，那么则执行对应的registerBeanDefinitions进行BeanDefinition的注册</li>
+</ol>
+</li>
+</ol>
+<h2 id="总结一下"><a href="#总结一下" class="headerlink" title="总结一下"></a>总结一下</h2><ol>
+<li>解析Appconfig类，并生成对应的ConfigurationClass</li>
+<li>扫描得到对应的BeanDefinition，同时这些类也是ConfigurationClass，再次解析</li>
+<li>解析ConfigurationClass的其他信息，例如@Import注解等</li>
+</ol>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Spring依赖注入流程</title>
     <url>/2021/06/09/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B/</url>
     <content><![CDATA[<p><strong>Spring有几种依赖注入的方式</strong></p>
@@ -766,53 +794,99 @@
       </tags>
   </entry>
   <entry>
-    <title>Spring解析配置类以及扫描源码解析</title>
-    <url>/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
-    <content><![CDATA[<h2 id="执行BeanFactoryPostProcessor"><a href="#执行BeanFactoryPostProcessor" class="headerlink" title="执行BeanFactoryPostProcessor"></a>执行BeanFactoryPostProcessor</h2><ol>
-<li>执行通过ApplicationContext添加进来的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
-<li>执行BeanFactory中实现了PriorityOrdered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
-<li>执行BeanFactory中实现了Ordered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
-<li>执行BeanFactory中其他的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
-<li>执行上面所有的BeanDefinitionRegistryPostProcessor的postProcessBeanFactory()方法</li>
-<li>执行通过ApplicationContext添加进来的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
-<li>执行BeanFactory中实现了PriorityOrdered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
-<li>执行BeanFactory中实现了Ordered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
-<li>执行BeanFactory中其他的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
+    <title>Spring依赖注入源码</title>
+    <url>/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/</url>
+    <content><![CDATA[<p>上节讲了Spring中的自动注入(byName,byType)和@Autowired注解的工作原理以及源码分析，这一节我们来分析剩下的核心的方法：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function">Object <span class="title">resolveDependency</span><span class="params">(DependencyDescriptor descriptor, <span class="meta">@Nullable</span> String requestingBeanName,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="meta">@Nullable</span> Set&lt;String&gt; autowiredBeanNames, <span class="meta">@Nullable</span> TypeConverter typeConverter)</span> <span class="keyword">throws</span> BeansException</span>;</span><br></pre></td></tr></table></figure>
+<p>该方法表示，传入一个依赖描述（DependencyDescriptor），该方法会根据该依赖描述从BeanFactory中找出对应的唯一的一个Bean对象。</p>
+<a id="more"></a>
+
+<p>下面来分析一下<strong>DefaultListableBeanFactory</strong>中**resolveDependency()**方法的具体实现。</p>
+<p><img src="/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/resolveDependency%E6%B5%81%E7%A8%8B.jpg" alt="resolveDependency流程"></p>
+<h2 id="findAutowireCandidates-实现"><a href="#findAutowireCandidates-实现" class="headerlink" title="findAutowireCandidates()实现"></a>findAutowireCandidates()实现</h2><ol>
+<li>找出BeanFactory中类型为type的所有的Bean的名字，注意是名字，而不是Bean对象，因为我们可以根据BeanDefinition就能判断和当前type是不是匹配</li>
+<li>把resolvableDependencies中key为type的对象找出来并添加到result中</li>
+<li>遍历根据type找出的beanName，判断当前beanName对应的Bean是不是能够被自动注入</li>
+<li>先判断beanName对应的BeanDefinition中的autowireCandidate属性，如果为false，表示不能用来进行自动注入，如果为true则继续进行判断</li>
+<li>判断当前type是不是泛型，如果是泛型是会把容器中所有的beanName找出来的，如果是这种情况，那么在这一步中就要获取到泛型的真正类型，然后进行匹配，如果当前beanName和当前泛型对应的真实类型匹配，那么则继续判断</li>
+<li>如果当前DependencyDescriptor上存在@Qualifier注解，那么则要判断当前beanName上是否定义了Qualifier，并且是否和当前DependencyDescriptor上的Qualifier相等，相等则匹配</li>
+<li>经过上述验证之后，当前beanName才能成为一个可注入的，添加到result中</li>
+</ol>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring推断构造方法</title>
+    <url>/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/</url>
+    <content><![CDATA[<p>Spring中的一个bwan，需要实例化得到一个对象，而实例化就需要用到构造方法</p>
+<h2 id="类只有一个构建方法"><a href="#类只有一个构建方法" class="headerlink" title="类只有一个构建方法"></a>类只有一个构建方法</h2><ol>
+<li><p>无参的构造方法</p>
+<p>如果只有一个无参的构造方法，那么实例化就只能使用这个方法</p>
+</li>
+<li><p>有参的构造方法</p>
+<p>如果只有一个有参的构造方法，那么实例化时就能使用这个构造方法吗？也是需要分情况讨论的</p>
+<ol>
+<li>使用AnnotationConfigApplicationContext，会使用这个构造方法进行实例化，那么Spring会根据构造方法的参数信息去寻找bean，然后传给构造方法</li>
+<li>使用ClassPathXmlApplicationContext，表示使用XML的方式来使用bean，要么在XML中指定构造方法参数值（手动设置），要不配置autowired=constructor让spring自动寻找bean作为构造方法的参数</li>
+</ol>
+</li>
 </ol>
 <a id="more"></a>
 
-<h2 id="ConfigurationClassPostProcessor执行流程"><a href="#ConfigurationClassPostProcessor执行流程" class="headerlink" title="## ConfigurationClassPostProcessor执行流程"></a>## ConfigurationClassPostProcessor执行流程</h2><p><img src="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg" alt="ConfigurationBeanPostProsessor"></p>
-<ol>
-<li>启动Spring时，需要传入一个AppConfig.class给ApplicationContext，ApplicationContext会根据AppConfig类封装成一个BeanDefinition，这种BeanDefinition我们把它称为配置类BeanDefinition。</li>
-<li>ConfigurationClassClassProcessor中会把配置类BeanDefinition取出来</li>
-<li>构建一个ConfigurationClassParser用来解析配置类BeanDefinition，并且会生成一个配置类对象ConfigurationClass</li>
-<li>如果配置类中存在@Component注解，那么解析配置类中的内部类（如果内部类也是配置类，会递归）</li>
-<li>如果配置类上存在@PropertySource注解，那么则解析该注解，并得到PropertySource对象，并添加到environment中去</li>
-<li>如果配置类上存在@ConponentScan注解，那么解析改注解，进行扫描，得到BeanDefinition集合，然后判断这些BeanDefinition是不是也是配置类（只要存在@Component注解的就是配置类，所以扫描出来的基本都是配置类），如果是配置类则继续解析该配置类（递归），并且会生成对应的ConfigurationClass</li>
-<li>如果配置类上存在@Import注解，那么判断import进来的类的类型：<ol>
-<li>如果类型是ImportSelector，那么调用执行selectImports方法的到类名，然后把这个类当做配置类进行解析（递归）</li>
-<li>如果类型是ImportBeanDefinitionRegistrar，那么则生成一个ImportBeanDefinitionRegistrar实例对象，并添加到配置类中的importBeanDefinitionRegistrars属性中</li>
-<li>否则继续解析该配置类（递归）</li>
+<h2 id="类有多个构造方法"><a href="#类有多个构造方法" class="headerlink" title="类有多个构造方法"></a>类有多个构造方法</h2><ol>
+<li>如果开发者指定了想要使用的构造方法,那么使用这个构建方法</li>
+<li>如果开发者没有指定想要使用的构造方法,那么就看开发者是不是让Spring自动选择构造方法</li>
+<li>如果没有让Spring自动去选择构造方法，则Spring利用无参构造方法，如果没有无参构造方法则报错</li>
+</ol>
+<h3 id="指定使用构造方法"><a href="#指定使用构造方法" class="headerlink" title="指定使用构造方法"></a>指定使用构造方法</h3><ol>
+<li>XML中的<constructor-arg>标签，这个标签表示构造方法参数，所以可以根据这个确定想要使用的构造方法的参数个数，从而确定想要使用的构造方法</constructor-arg></li>
+<li>通过@Autowired注解，注解可以写在构造方法上，标注了注解的构造方法就是开发者指定的构造方法。两者的区别在与通过xml的方式是通过直接指定构造方法参数值的，而通过@Autowired注解则需要通过Spring先byType再byName的方式找到符合条件的bean作为构造方法的入参</li>
+<li>如果多个构造方法上都写了@Autowired(required=true)，Spring要求只存在一个@Autowired或@Autowired(required=true)的构造方法，多个会报错</li>
+</ol>
+<h3 id="Spring自动选择构造方法"><a href="#Spring自动选择构造方法" class="headerlink" title="Spring自动选择构造方法"></a>Spring自动选择构造方法</h3><ol>
+<li>使用ClassPathXmlApplicationContext，XML中直接指定某个bean的autowire为constructor</li>
+<li>使用AnnotationConfigApplicationContext，无法设置bean自动选择构造器</li>
+<li>Spring允许多个@Autowired(required=false)，这种情况下Spring会从这些构造方法中自动寻找一个</li>
+</ol>
+<h2 id="源码思路"><a href="#源码思路" class="headerlink" title="源码思路"></a>源码思路</h2><ol>
+<li>AbstractAutowireCapableBeanFactory类中的createBeanInstance()方法会去创建一个Bean实例</li>
+<li>根据BeanDefinition加载类得到Class对象</li>
+<li>如果BeanDefinition绑定了一个instanceSupplier,那么调用instanceSupplier的get方法得到一个对象并返回</li>
+<li>如果BeanDefinition中存在<strong>factoryMethodName</strong>，那么就调用该工厂方法得到一个bean对象并返回</li>
+<li>如果BeanDefinition已经自动构建过了，那么就调用autowireConstructor()自动构建一个对象</li>
+<li>调用SmartInstantiationAwareBeanPostProcessor的determineCandidateConstructors()方法得到哪些构造方法是可以用的</li>
+<li>如果上一步返回了构造方法，或者当前BeanDefinition的autowireMode属性是AUTOWIRE_CONSTRUCTOR，或者创建Bean时指定了构造方法参数值，那么就调用autowireConstructor()方法自动构造一个对象</li>
+<li>最后，如果不是上述情况，就根据无参构造方法实例化一个对象</li>
+</ol>
+<h3 id="autowireConstructor"><a href="#autowireConstructor" class="headerlink" title="autowireConstructor()"></a>autowireConstructor()</h3><ol>
+<li>先检查是否指定了具体的构造方法和构造方法参数值，或者在BeanDefinition中缓存了具体的构造方法或者构造方法参数值，如果存在那么直接使用该构造方法进行实例化</li>
+<li>如果没有确定的构造方法或者构造方法参数值<ol>
+<li>如果没有确定的构造方法，那么则找出类中所有的构造方法</li>
+<li>如果只有一个无参的构造方法，那么直接使用无参的构造方法进行实例化</li>
+<li>如果有多个可用的构造方法或者当前Bean需要通过构造方法注入<ol>
+<li>根据所指定的的构造方法参数值，确定所需要最少的构造方法参数值个数</li>
+<li>对所有的构造方法进行排序，参数个数多的放在前面（贪婪）</li>
+<li>遍历所有的构造方法，如果不是调用bean方法时所指定的构造方法参数值，那么根据构造方法参数类型找值，如果是制定的构造方法参数值，那么直接利用这些值，如果根据当前构造方法找到了构造方法参数值，那么这个构造方法就是可用的，但是不一定是最佳的，所以这里会有涉及到多个构造方法匹配到了值，会用值和构造方法参数类型进行匹配程度打分，找到一个最匹配的</li>
 </ol>
 </li>
-<li>如果配置类存在@ImporResource注解，那么则把导入进来的资源路径存在配置类对象中的importedResources属性中</li>
-<li>如果配置类上存在@Bean的方法，那么则把这些方法封装为BeanMethod对象，并添加到配置类对象中的beanMethod属性中</li>
-<li>如果配置类实现了某些接口，看这些接口内是否定义了@Bean的默认方法</li>
-<li>如果配置类有父类，则把父类当做配置类解析</li>
-<li>AppConfig这个类会对应一个ConfigurationClass，同时在解析的过程中也会生成另外的一些ConfigurationClass，接下来就利用reader来进一步解析ConfigurationClass<ol>
-<li>如果ConfigurationClass是通过@Import注解导入进来的，则把这个类生成一个BeanDefinition，同时解析这个类上@Scope,@Lazy等注解信息，并注册BeanDefinition</li>
-<li>如果ConfigurationClass中存在一些BeanMethod,也就是定义了@Bean，那么则解析这些@Bean，并生成对应的BeanDefinition，并注册</li>
-<li>如果ConfigurationClass中导入了一些资源文件，比如xx.xml，那么则解析这些xx.xml文件，得到并注册BeanDefinition</li>
-<li>如果ConfigurationClass中导入了一些ImportBeanDefinitionRegistrar，那么则执行对应的registerBeanDefinitions进行BeanDefinition的注册</li>
 </ol>
 </li>
 </ol>
-<h2 id="总结一下"><a href="#总结一下" class="headerlink" title="总结一下"></a>总结一下</h2><ol>
-<li>解析Appconfig类，并生成对应的ConfigurationClass</li>
-<li>扫描得到对应的BeanDefinition，同时这些类也是ConfigurationClass，再次解析</li>
-<li>解析ConfigurationClass的其他信息，例如@Import注解等</li>
-</ol>
-]]></content>
+<h4 id="匹配程度计算"><a href="#匹配程度计算" class="headerlink" title="匹配程度计算"></a>匹配程度计算</h4><p>主要是计算找到的bean和构造方法参数类型匹配程度有多高。</p>
+<p>假设bean的类型为A，A的父类是B，B的父类是C，同时A实现了接口D</p>
+<p>如果构造方法的参数类型为A，那么完全匹配，得分为0</p>
+<p>如果构造方法的参数类型为B，那么得分为2</p>
+<p>如果构造方法的参数类型为C，那么得分为4</p>
+<p>如果构造方法的参数类型为D，那么得分为1</p>
+<p>可以直接使用如下代码进行测试：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Object[] objects = <span class="keyword">new</span> Object[]&#123;<span class="keyword">new</span> A()&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 0</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;A.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;B.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;C.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 1</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;D.class&#125;, objects));</span><br></pre></td></tr></table></figure>
+<p>所以，我们可以发现，越匹配分数越低。</p>
+<h3 id="determineCandidateConstructors"><a href="#determineCandidateConstructors" class="headerlink" title="determineCandidateConstructors()"></a>determineCandidateConstructors()</h3>]]></content>
       <categories>
         <category>框架源码</category>
       </categories>
