@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg">
 <meta property="article:published_time" content="2021-07-11T17:29:26.000Z">
-<meta property="article:modified_time" content="2021-07-19T13:57:20.397Z">
+<meta property="article:modified_time" content="2021-07-19T18:27:26.968Z">
 <meta property="article:author" content="Freeman">
 <meta property="article:tag" content="spring">
 <meta name="twitter:card" content="summary">
@@ -221,7 +221,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-07-19 21:57:20" itemprop="dateModified" datetime="2021-07-19T21:57:20+08:00">2021-07-19</time>
+                <time title="修改时间：2021-07-20 02:27:26" itemprop="dateModified" datetime="2021-07-20T02:27:26+08:00">2021-07-20</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -257,7 +257,7 @@
 </ol>
 <a id="more"></a>
 
-<h2 id="ConfigurationClassPostProcessor执行流程"><a href="#ConfigurationClassPostProcessor执行流程" class="headerlink" title="## ConfigurationClassPostProcessor执行流程"></a>## ConfigurationClassPostProcessor执行流程</h2><p><img src="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg" alt="ConfigurationBeanPostProsessor"></p>
+<h2 id="ConfigurationClassPostProcessor执行流程"><a href="#ConfigurationClassPostProcessor执行流程" class="headerlink" title="ConfigurationClassPostProcessor执行流程"></a>ConfigurationClassPostProcessor执行流程</h2><p><img src="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg" alt="ConfigurationBeanPostProsessor"></p>
 <ol>
 <li>启动Spring时，需要传入一个AppConfig.class给ApplicationContext，ApplicationContext会根据AppConfig类封装成一个BeanDefinition，这种BeanDefinition我们把它称为配置类BeanDefinition。</li>
 <li>ConfigurationClassClassProcessor中会把配置类BeanDefinition取出来</li>
@@ -371,7 +371,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%A7%E8%A1%8CBeanFactoryPostProcessor"><span class="nav-number">1.</span> <span class="nav-text">执行BeanFactoryPostProcessor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ConfigurationClassPostProcessor%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">## ConfigurationClassPostProcessor执行流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E4%B8%80%E4%B8%8B"><span class="nav-number">3.</span> <span class="nav-text">总结一下</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%A7%E8%A1%8CBeanFactoryPostProcessor"><span class="nav-number">1.</span> <span class="nav-text">执行BeanFactoryPostProcessor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ConfigurationClassPostProcessor%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">ConfigurationClassPostProcessor执行流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E4%B8%80%E4%B8%8B"><span class="nav-number">3.</span> <span class="nav-text">总结一下</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

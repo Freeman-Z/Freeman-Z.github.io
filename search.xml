@@ -161,42 +161,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Netty核心源码解析</title>
-    <url>/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
-    <content><![CDATA[<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
-<li><p>主从Reactor模型</p>
-</li>
-<li><p>NIO多路复用非阻塞</p>
-</li>
-<li><p>无锁串行化思想</p>
-</li>
-<li><p>支持高性能序列化协议</p>
-</li>
-<li><p>零拷贝（直接内存的使用）</p>
-</li>
-<li><p>ByteBuf内存池设计</p>
-</li>
-<li><p>灵活的TCP参数配置能力</p>
-</li>
-<li><p>并发优化</p>
-<a id="more"></a>
-
-</li>
-</ul>
-<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
-<!-- more -->
-
-<h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
-<p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
-]]></content>
-      <categories>
-        <category>分布式框架</category>
-      </categories>
-      <tags>
-        <tag>netty</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Netty核心功能与线程模型</title>
     <url>/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
     <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
@@ -310,6 +274,42 @@
       </tags>
   </entry>
   <entry>
+    <title>Netty核心源码解析</title>
+    <url>/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
+    <content><![CDATA[<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
+<li><p>主从Reactor模型</p>
+</li>
+<li><p>NIO多路复用非阻塞</p>
+</li>
+<li><p>无锁串行化思想</p>
+</li>
+<li><p>支持高性能序列化协议</p>
+</li>
+<li><p>零拷贝（直接内存的使用）</p>
+</li>
+<li><p>ByteBuf内存池设计</p>
+</li>
+<li><p>灵活的TCP参数配置能力</p>
+</li>
+<li><p>并发优化</p>
+<a id="more"></a>
+
+</li>
+</ul>
+<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
+<!-- more -->
+
+<h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
+<p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
+]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
+        <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Netty编解码&amp;粘包拆包&amp;心跳机制&amp;断线自动重连</title>
     <url>/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/</url>
     <content><![CDATA[<h3 id="Netty编解码"><a href="#Netty编解码" class="headerlink" title="Netty编解码"></a>Netty编解码</h3><p>Netty涉及到编解码的组件有Channel、ChannelHandler、ChannelPipe等</p>
@@ -390,127 +390,90 @@
       </tags>
   </entry>
   <entry>
-    <title>Spring中的核心概念</title>
-    <url>/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/</url>
-    <content><![CDATA[<h2 id="BeanDefinition"><a href="#BeanDefinition" class="headerlink" title="BeanDefinition"></a>BeanDefinition</h2><p>Bean的定义，BeanDefinition可以理解为底层源码级别的一个概念，也可以理解为Spring提供的一种<strong>API使用</strong>的方式。</p>
+    <title>Spring中Bean的生命周期</title>
+    <url>/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
+    <content><![CDATA[<p>Spring最重要的功能就是帮助程序员创建对象（也就是IOC），而启动Spring就是为创建Bean对象做准备，所以我们先明白Spring到底是则呢怎么去创建Bean的，也就是先弄明白Bean的生命周期。</p>
+<p>Bean的生命周期就是指：<strong>在Spring中，一个Bean是如何生成的，如何销毁的？</strong></p>
 <a id="more"></a>
 
-<h2 id="BeanDefinitionReader"><a href="#BeanDefinitionReader" class="headerlink" title="BeanDefinitionReader"></a>BeanDefinitionReader</h2><h3 id="AnnotatedBeanDefinitionReader"><a href="#AnnotatedBeanDefinitionReader" class="headerlink" title="AnnotatedBeanDefinitionReader"></a>AnnotatedBeanDefinitionReader</h3><p>可以直接把某个类转换为BeanDefinition，并且会解析该类上的注解</p>
-<p>注意：它能解析的注解是：@Conditional，@Scope、@Lazy、@Primary、@DependsOn、@Role、@Description</p>
-<h3 id="XmlBeanDefinitionReader"><a href="#XmlBeanDefinitionReader" class="headerlink" title="XmlBeanDefinitionReader"></a>XmlBeanDefinitionReader</h3><p>可以解析&lt;bean/&gt;标签</p>
-<h3 id="ClassPathBeanDefinitionScanner"><a href="#ClassPathBeanDefinitionScanner" class="headerlink" title="ClassPathBeanDefinitionScanner"></a>ClassPathBeanDefinitionScanner</h3><p>这个并不是BeanDefinitionReader，但是它的作用和BeanDefinitionReader类似，它可以进行扫描，扫描某个包路径，对扫描到的类进行解析，比如，扫描到的类上如果存在@Component注解，那么就会把这个类解析为一个BeanDefinition</p>
-<h2 id="BeanFactory"><a href="#BeanFactory" class="headerlink" title="BeanFactory"></a>BeanFactory</h2><p>Spring中比较核心的是BeanFactory的实现类是<strong>DefaultListableBeanFactory</strong></p>
-<p><img src="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/default-listable-bean-factory.png" alt="default-listable-bean-factory"></p>
-<p>实现接口也表示他具有以下的功能</p>
+<p><img src="/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/Bean%E7%9A%84%E7%94%9F%E6%88%90%E8%BF%87%E7%A8%8B.jpg" alt="Bean的生命周期"></p>
+<h2 id="Bean的生成过程"><a href="#Bean的生成过程" class="headerlink" title="Bean的生成过程"></a>Bean的生成过程</h2><h3 id="1-生成BeanDefinition"><a href="#1-生成BeanDefinition" class="headerlink" title="1.生成BeanDefinition"></a>1.生成BeanDefinition</h3><p>Spring启动的时候会进行扫描，会先调用</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br></pre></td></tr></table></figure>
+<p>拿到所指定的包路径下的所有文件资源（******.class文件）</p>
+<p>然后会遍历每个Resource，为每个Resource生成一个MetadataReader对象，这个对象拥有三个功能：</p>
 <ol>
-<li>AliasRegistry：支持别名功能，一个名字可以对应多个别名</li>
-<li>BeanDefinitionRegistry：可以支持注册，删除，保存，获取某个BeanDefintion</li>
-<li>BeanFactory：Bean工厂，可以根据Bean的名称、类型、别名获的Bean对象</li>
-<li>SingletonBeanRegistry：可以注册，获取某个单例Bean</li>
-<li>SimpleAliasRegistry：是一个类，实现了AliasRegistry接口中所定义的功能，支持别名功能</li>
-<li>ListableBeanFactory：在BeanFactory的基础上，增加了其他功能，可以获取所有BeanDefinition的beanNames，可以根据某个类型获取对应的beanNames，可以根据某个类型获取{类型：对应的Bean}的映射关系</li>
-<li>HierarchicalBeanFactory：在BeanFactory的基础上，添加了获取父BeanFactory的功能</li>
-<li>DefaultSingletonBeanRegistry：它是一个类，SimpleAliasRegistry的子类，支持别名功能，同时实现了SingletonBeanRegistry接口，拥有了直接注册、获取某个<strong>单例</strong>Bean的功能</li>
-<li>ConfigurableBeanFactory：在HierarchicalBeanFactory和SingletonBeanRegistry的基础上，添加了设置父BeanFactory、类加载器（表示可以指定某个类加载器进行类的加载）、设置Spring EL表达式解析器（表示该BeanFactory可以解析EL表达式）、设置类型转化服务（表示该BeanFactory可以进行类型转化）、可以添加BeanPostProcessor（表示该BeanFactory支持Bean的后置处理器），可以合并BeanDefinition，可以销毁某个Bean等等功能</li>
-<li>FactoryBeanRegistrySupport：DefaultSingletonBeanRegistry的子类，支持了FactoryBean的功能</li>
-<li>AutowireCapableBeanFactory：是直接继承了BeanFactory，在BeanFactory的基础上，支持在创建Bean的过程中能对Bean进行自动装配</li>
-<li>AbstractBeanFactory：实现了ConfigurableBeanFactory接口，继承了FactoryBeanRegistrySupport，这个BeanFactory的功能已经很全面了，但是不能自动装配和获取beanNames</li>
-<li>ConfigurableListableBeanFactory：继承了ListableBeanFactory、AutowireCapableBeanFactory、ConfigurableBeanFactory</li>
-<li>AbstractAutowireCapableBeanFactory：继承了AbstractBeanFactory，实现了AutowireCapableBeanFactory，拥有了自动装配的功能</li>
-<li>DefaultListableBeanFactory：继承了AbstractAutowireCapableBeanFactory，实现了ConfigurableListableBeanFactory接口和BeanDefinitionRegistry接口，所以DefaultListableBeanFactory的功能很强大</li>
+<li>获取对应的Resource资源</li>
+<li>获取Resource对应的class元数据信息，包括类的名字，是不是接口、是不是一个注解、是不是抽象类、有没有父类，父类的名字，所实现的所有接口的名字，内部类的类名等等</li>
+<li>获取Resource对应的class上的注解信息，当前类上有哪些注解，当前类中有哪些方法上有注解</li>
 </ol>
-<p>DefaultListableBeanFactory支持的功能：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">AbstractBeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition().getBeanDefinition();</span><br><span class="line">beanDefinition.setBeanClass(User.class);</span><br><span class="line"></span><br><span class="line">DefaultListableBeanFactory beanFactory = <span class="keyword">new</span> DefaultListableBeanFactory();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册BeanDefinition</span></span><br><span class="line">beanFactory.registerBeanDefinition(<span class="string">&quot;user&quot;</span>, beanDefinition);</span><br><span class="line"><span class="comment">// 注册别名</span></span><br><span class="line">beanFactory.registerAlias(<span class="string">&quot;user&quot;</span>, <span class="string">&quot;user1&quot;</span>);</span><br><span class="line"><span class="comment">// 注册BeanPostProcessor</span></span><br><span class="line">beanFactory.addBeanPostProcessor(<span class="keyword">new</span> DemoBeanPostProcessor());</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取Bean对象</span></span><br><span class="line">System.out.println(beanFactory.getBean(<span class="string">&quot;user1&quot;</span>));</span><br><span class="line"><span class="comment">// 根据类型获取beanNames</span></span><br><span class="line">System.out.println(beanFactory.getBeanNamesForType(User.class));</span><br></pre></td></tr></table></figure>
-<h2 id="ApplicationContext"><a href="#ApplicationContext" class="headerlink" title="ApplicationContext"></a>ApplicationContext</h2><p>首先ApplicationContext是个接口，可以把它理解为一个特殊的BeanFactory</p>
-<p><img src="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/application-context.png" alt="application-context"></p>
-<ol>
-<li>HierarchicalBeanFactory：拥有获取父BeanFactory的功能</li>
-<li>ListableBeanFactory：拥有获取beanNames的功能</li>
-<li>ResourcePatternResolver：资源加载器，可以一次性获取多个资源（文件资源等等）</li>
-<li>EnvironmentCapable：可以获取运行时环境（没有设置运行时环境功能）</li>
-<li>ApplicationEventPublisher：拥有广播事件的功能（没有添加事件监听器的功能）</li>
-<li>MessageSource：拥有国际化功能</li>
+<p>在生成MetadataReader对象时，会利用<strong>ASM</strong>技术解析class文件，得到类的元数据集信息合注解信息，在这个过程中也会利用ClassLoader去加载注解类（<strong>ClassUtils.getDefaultClassLoader()所获得的类加载器</strong>），但是不会加载本类。</p>
+<p>有了MetadataReader对象，就相当于有了当前类的所有信息，但是当前类并没有加载，也是可以理解的，真正在用到这个类的时候才加载。</p>
+<p>然后利用MetadataReader对象生成一个ScannedGenericBeanDefinition对象，<strong>注意此时的BeanDefinition对象中的beanClass属性存储的是当前类的名字，而不是class对象</strong>。（beanClass属性的类型是Object，它即可以存储类的名字，也可以存储class对象）</p>
+<h3 id="2-合并BeanDefinition"><a href="#2-合并BeanDefinition" class="headerlink" title="2.合并BeanDefinition"></a>2.合并BeanDefinition</h3><p>如果某个BeanDefinition存在父BeanDefinition，那么则要进行合并，递归到往上找到父类，用父类的BeanDefinition新建一个RootBeanDefinition，再用子类的属性覆盖父类的属性。（ 在这个过程中，父类和子类存放在beanDefinitionMap当中的BeanDefinition其实是没有改变的，而是新生成了一个RootBeanDefinition存放在了mergedBeanDefinitions这个map里）</p>
+<h3 id="3-加载类"><a href="#3-加载类" class="headerlink" title="3. 加载类"></a>3. 加载类</h3><p>有了BeanDefinition之后，后续就会基于BeanDefinition去创建Bean，而创建Bean就必须实例化对象，而实例化就必须先加载当前BeanDefinition所对应的class，在AbstractAutowireCapableBeanFactory类的createBean()方法中，一开始就会调用：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Class&lt;?&gt; resolvedClass = resolveBeanClass(mbd, beanName);</span><br></pre></td></tr></table></figure>
+
+
+<p>这行代码就是去加载类，该方法是这么实现的：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (mbd.hasBeanClass()) &#123;</span><br><span class="line">    <span class="keyword">return</span> mbd.getBeanClass();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> AccessController.doPrivileged((PrivilegedExceptionAction&lt;Class&lt;?&gt;&gt;) () -&gt;</span><br><span class="line">        doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> doResolveBeanClass(mbd, typesToMatch);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public boolean hasBeanClass() &#123;</span><br><span class="line">    return (this.beanClass instanceof Class);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果beanClass属性的类型是Class，那么就直接返回，如果不是，则会根据类名进行加载（doResolveBeanClass方法所做的事情）</p>
+<p>会利用BeanFactory所设置的类加载器来加载类，如果没有设置，则默认使用**ClassUtils.getDefaultClassLoader()**所返回的类加载器来加载。</p>
+<h4 id="ClassUtils-getDefaultClassLoader"><a href="#ClassUtils-getDefaultClassLoader" class="headerlink" title="ClassUtils.getDefaultClassLoader()"></a><strong>ClassUtils.getDefaultClassLoader()</strong></h4><ol>
+<li>优先获取当前线程中的ClassLoader</li>
+<li>如果为空，则获取加载ClassUtils类的类加载器（正常情况下，就是AppClassLoader，但是如果是在Tomcat中运行，那么则会是Tomcat中为每个应用所创建的WebappClassLoader）</li>
+<li>如果为空，那么则是bootstrap类加载器加载的ClassUtils类，那则获取系统类加载器进行加载</li>
 </ol>
-<h3 id="AnnotationConfigApplicationContext"><a href="#AnnotationConfigApplicationContext" class="headerlink" title="AnnotationConfigApplicationContext"></a>AnnotationConfigApplicationContext</h3><p><img src="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/annotation-config-application-context.png" alt="annotation-config-application-context"></p>
-<ol>
-<li>ConfigurableApplicationContext：继承了ApplicationContext接口，增加了，添加事件监听器、添加BeanFactoryPostProcessor、设置Environment，获取ConfigurableListableBeanFactory等功能</li>
-<li>AbstractApplicationContext：实现了ConfigurableApplicationContext接口</li>
-<li>GenericApplicationContext：继承了AbstractApplicationContext，实现了BeanDefinitionRegistry接口，拥有了所有ApplicationContext的功能，并且可以注册BeanDefinition，注意这个类中有一个属性(DefaultListableBeanFactory <strong>beanFactory</strong>)</li>
-<li>AnnotationConfigRegistry：可以单独注册某个为类为BeanDefinition（可以处理该类上的**@Configuration注解<strong>，已经可以处理</strong>@Bean注解**），同时可以扫描</li>
-<li>AnnotationConfigApplicationContext：继承了GenericApplicationContext，实现了AnnotationConfigRegistry接口，拥有了以上所有的功能</li>
+<h3 id="4-实例化前"><a href="#4-实例化前" class="headerlink" title="4. 实例化前"></a>4. 实例化前</h3><p>允许第三方可以不按照Spring的正常流程来创建一个Bean。</p>
+<p>可以利用InstantiationAwareBeanPostProcessor的postProcessBeforeInstantiation方法来提前返回一个Bean对象，得到对象后会直接</p>
+<p>跳到进行<strong>Bean初始化</strong>的方法，然后直接结束Bean的生命周期</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">applyBeanPostProcessorsBeforeInstantiation</span><span class="params">(Class&lt;?&gt; beanClass, String beanName)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">      <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">         InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">         Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);</span><br><span class="line">         <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="5-推断构造方法"><a href="#5-推断构造方法" class="headerlink" title="5. 推断构造方法"></a>5. 推断构造方法</h3><p>选择一个合适的构造器用来创建实例对象</p>
+<h3 id="6-实例化"><a href="#6-实例化" class="headerlink" title="6. 实例化"></a>6. 实例化</h3><p>构造方法反射得到一个实例</p>
+<h3 id="7-BeanDefinition的后置处理"><a href="#7-BeanDefinition的后置处理" class="headerlink" title="7. BeanDefinition的后置处理"></a>7. BeanDefinition的后置处理</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">        MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;</span><br><span class="line">        bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里可以处理BeanDefinition，但是此时实例对象已经生成好了，所以修改beanClass已经没用了，但是可以修改PropertyValues，比如：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LubanMergedBeanDefinitionPostProcessor</span> <span class="keyword">implements</span> <span class="title">MergedBeanDefinitionPostProcessor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessMergedBeanDefinition</span><span class="params">(RootBeanDefinition beanDefinition, Class&lt;?&gt; beanType, String beanName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (beanName.equals(<span class="string">&quot;userService&quot;</span>)) &#123;</span><br><span class="line">            <span class="comment">//实例对象已经生成，此时变更没有意义</span></span><br><span class="line">            beanDefinition.setBeanClass(User.class); </span><br><span class="line">            beanDefinition.getPropertyValues().add(<span class="string">&quot;name&quot;</span>,<span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="8-实例化后（填充属性前）"><a href="#8-实例化后（填充属性前）" class="headerlink" title="8. 实例化后（填充属性前）"></a>8. 实例化后（填充属性前）</h3><p>可以自己写一个InstantiationAwareBeanPostProcessor，然后重写postProcessAfterInstantiation方法返回false,那么则不会进行属性填充</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">      <span class="keyword">if</span> (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) &#123;</span><br><span class="line">         <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="9-填充属性"><a href="#9-填充属性" class="headerlink" title="9. 填充属性"></a>9. 填充属性</h3><p>使用Spring自带的Autowired，默认是关闭的(AUTOWIRE_NO)</p>
+<p>其实就是Spring自动的根据某个类中的set方法来找bean</p>
+<ul>
+<li>byName就是根据某个set方法所对应的属性名去找bean</li>
+<li>byType，就是根据某个set方法的参数类型去找bean</li>
+</ul>
+<h3 id="10-填充属性后"><a href="#10-填充属性后" class="headerlink" title="10. 填充属性后"></a>10. 填充属性后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 调用BeanPostProcessor分别解析@Autowired、@Resource、@Value，得到属性值</span></span><br><span class="line">      PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">         <span class="keyword">if</span> (filteredPds == <span class="keyword">null</span>) &#123;</span><br><span class="line">            filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);</span><br><span class="line">         &#125;</span><br><span class="line">         pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);</span><br><span class="line">         <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      pvs = pvsToUse;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>@Autowired注解的 AutowiredAnnotationBeanPostProcessor</p>
+<p>@Resource注解的 CommonAnnotationBeanPostProcessor</p>
+</blockquote>
+<h3 id="11-执行Aware"><a href="#11-执行Aware" class="headerlink" title="11. 执行Aware"></a>11. 执行Aware</h3><ol>
+<li>((BeanNameAware) bean).setBeanName(beanName);</li>
+<li>((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);</li>
+<li>((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.<strong>this</strong>);</li>
 </ol>
-<h3 id="ClassPathXmlApplicationContext"><a href="#ClassPathXmlApplicationContext" class="headerlink" title="ClassPathXmlApplicationContext"></a>ClassPathXmlApplicationContext</h3><p><img src="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/xml-web-application-context.png" alt="xml-web-application-context"></p>
-<p>它也是继承了AbstractApplicationContext，但是相对于AnnotationConfigApplicationContext而言，功能没有AnnotationConfigApplicationContext强大，比如不能注册BeanDefinition</p>
-<h3 id="国际化"><a href="#国际化" class="headerlink" title="国际化"></a>国际化</h3><p>先定义一个MessageSource:</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> MessageSource <span class="title">messageSource</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ResourceBundleMessageSource messageSource = <span class="keyword">new</span> ResourceBundleMessageSource();</span><br><span class="line">    messageSource.setBasename(<span class="string">&quot;messages&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> messageSource;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>有了这个Bean，你可以在你任意想要进行国际化的地方使用该MessageSource。</p>
-<p>同时，因为ApplicationContext也拥有国家化的功能，所以可以直接这么用：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">annotationConfigApplicationContext.getMessage(<span class="string">&quot;test&quot;</span>, <span class="keyword">null</span>, <span class="keyword">new</span> Locale(<span class="string">&quot;en_CN&quot;</span>))</span><br></pre></td></tr></table></figure>
-<h3 id="资源加载"><a href="#资源加载" class="headerlink" title="资源加载"></a>资源加载</h3><p>ApplicationContext还拥有资源加载的功能，比如，可以直接利用ApplicationContext获取某个文件的内容：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource resource = annotationConfigApplicationContext.getResource(<span class="string">&quot;file://D:\\IdeaProjects\\spring-framework\\demo\\src\\main\\java\\com\\demo\\entity\\User.java&quot;</span>);</span><br><span class="line">System.out.println(resource.contentLength());</span><br></pre></td></tr></table></figure>
-<p>你可以想想，如果你不使用ApplicationContext，而是自己来实现这个功能，就比较费时间了。</p>
-<p>还比如你可以：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource resource = annotationConfigApplicationContext.getResource(<span class="string">&quot;classpath:com/demo/entity/User.class&quot;</span>);</span><br><span class="line">System.out.println(resource.contentLength());</span><br></pre></td></tr></table></figure>
+<h3 id="12-初始化前"><a href="#12-初始化前" class="headerlink" title="12. 初始化前"></a>12. 初始化前</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessBeforeInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 
-<p>还可以一次性获取多个：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource[] resources=annotationConfgigApplicationContext.getResources(<span class="string">&quot;classpath:com/demo/service/*.class&quot;</span>);</span><br><span class="line"><span class="keyword">for</span> (Resource resource : resources) &#123;</span><br><span class="line">    System.out.println(resource.contentLength());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="获取运行时环境"><a href="#获取运行时环境" class="headerlink" title="获取运行时环境"></a>获取运行时环境</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 获取JVM所允许的操作系统的环境</span></span><br><span class="line">annotationConfigApplicationContext.getEnvironment().getSystemEnvironment();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取JVM本身的一些属性，包括-D所设置的</span></span><br><span class="line">annotationConfigApplicationContext.getEnvironment().getSystemProperties();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 还可以直接获取某个环境或properties文件中的属性</span></span><br><span class="line">annotationConfigApplicationContext.getEnvironment().getProperty(<span class="string">&quot;testyyy&quot;</span>)</span><br></pre></td></tr></table></figure>
-<p>注意，可以利用</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@PropertySource(&quot;classpath:application.properties&quot;)</span></span><br></pre></td></tr></table></figure>
-<p>来使得某个properties文件中的参数添加到运行时环境中</p>
-<h3 id="事件发布"><a href="#事件发布" class="headerlink" title="事件发布"></a>事件发布</h3><p>先定义一个事件监听器</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ApplicationListener <span class="title">applicationListener</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> ApplicationListener() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onApplicationEvent</span><span class="params">(ApplicationEvent event)</span> </span>&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;接收到了一个事件&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<p>然后发布一个事件：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">annotationConfigApplicationContext.publishEvent(<span class="string">&quot;kkk&quot;</span>);</span><br></pre></td></tr></table></figure>
-
-
-<h2 id="类型转化"><a href="#类型转化" class="headerlink" title="类型转化"></a>类型转化</h2><h3 id="PropertyEditor"><a href="#PropertyEditor" class="headerlink" title="PropertyEditor"></a>PropertyEditor</h3><p>JDK中提供的类型转化工具类</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StringToUserPropertyEditor</span> <span class="keyword">extends</span> <span class="title">PropertyEditorSupport</span> <span class="keyword">implements</span> <span class="title">PropertyEditor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setAsText</span><span class="params">(String text)</span> <span class="keyword">throws</span> IllegalArgumentException </span>&#123;</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName(text);</span><br><span class="line">        <span class="keyword">this</span>.setValue(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">StringToUserPropertyEditor propertyEditor = <span class="keyword">new</span> StringToUserPropertyEditor();</span><br><span class="line">propertyEditor.setAsText(<span class="string">&quot;1&quot;</span>);</span><br><span class="line">User value = (User) propertyEditor.getValue();</span><br><span class="line">System.out.println(value);</span><br></pre></td></tr></table></figure>
-
-
-<p>如何向Spring中注册PropertyEditor：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> CustomEditorConfigurer <span class="title">customEditorConfigurer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    CustomEditorConfigurer customEditorConfigurer = <span class="keyword">new</span> CustomEditorConfigurer();</span><br><span class="line">    Map&lt;Class&lt;?&gt;, Class&lt;? extends PropertyEditor&gt;&gt; propertyEditorMap = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">    propertyEditorMap.put(User.class, StringToUserPropertyEditor.class);</span><br><span class="line">    customEditorConfigurer.setCustomEditors(propertyEditorMap);</span><br><span class="line">    <span class="keyword">return</span> customEditorConfigurer;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<p>假设现在有如下Bean:</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Value(&quot;true&quot;)</span></span><br><span class="line">    User test;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(test);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>那么test属性就能正常的完成属性赋值</p>
-<h3 id="ConversionService"><a href="#ConversionService" class="headerlink" title="ConversionService"></a>ConversionService</h3><p>Spring中提供的类型转化服务，它比PropertyEditor更强大</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StringToUserConverter</span> <span class="keyword">implements</span> <span class="title">ConditionalGenericConverter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">matches</span><span class="params">(TypeDescriptor sourceType, TypeDescriptor targetType)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> sourceType.getType().equals(String.class) &amp;&amp; targetType.getType().equals(User.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Set&lt;ConvertiblePair&gt; <span class="title">getConvertibleTypes</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Collections.singleton(<span class="keyword">new</span> ConvertiblePair(String.class, User.class));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">convert</span><span class="params">(Object source, TypeDescriptor sourceType, TypeDescriptor targetType)</span> </span>&#123;</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName((String)source);</span><br><span class="line">        <span class="keyword">return</span> user;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">DefaultConversionService conversionService = <span class="keyword">new</span> DefaultConversionService();</span><br><span class="line">conversionService.addConverter(<span class="keyword">new</span> StringToUserConverter());</span><br><span class="line">User value = conversionService.convert(<span class="string">&quot;1&quot;</span>, User.class);</span><br><span class="line">System.out.println(value);</span><br></pre></td></tr></table></figure>
-
-
-<p>如何向Spring中注册ConversionService：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ConversionServiceFactoryBean <span class="title">conversionService</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ConversionServiceFactoryBean conversionServiceFactoryBean = <span class="keyword">new</span> ConversionServiceFactoryBean();</span><br><span class="line">    conversionServiceFactoryBean.setConverters(Collections.singleton(<span class="keyword">new</span> StringToUserConverter()));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> conversionServiceFactoryBean;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="TypeConverter"><a href="#TypeConverter" class="headerlink" title="TypeConverter"></a>TypeConverter</h3><p>整合了PropertyEditor和ConversionService的功能，是Spring内部用的</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">SimpleTypeConverter typeConverter = <span class="keyword">new</span> SimpleTypeConverter();</span><br><span class="line">typeConverter.registerCustomEditor(User.class, <span class="keyword">new</span> StringToUserPropertyEditor());</span><br><span class="line"><span class="comment">//typeConverter.setConversionService(conversionService);</span></span><br><span class="line">User value = typeConverter.convertIfNecessary(<span class="string">&quot;1&quot;</span>, User.class);</span><br><span class="line">System.out.println(value);</span><br></pre></td></tr></table></figure>
-
-
-<h2 id="BeanPostProcessor"><a href="#BeanPostProcessor" class="headerlink" title="BeanPostProcessor"></a>BeanPostProcessor</h2><p>Bean的后置处理器，可以在创建每个Bean的过程中进行干涉，是属于BeanFactory中一个属性，讲Bean的生命周期中详细讲。</p>
-<h2 id="BeanFactoryPostProcessor"><a href="#BeanFactoryPostProcessor" class="headerlink" title="BeanFactoryPostProcessor"></a>BeanFactoryPostProcessor</h2><p>Bean工厂的后置处理器，是属于ApplicationContext中的一个属性，是ApplicationContext在实例化一个BeanFactory后，可以利用BeanFactoryPostProcessor继续处理BeanFactory。</p>
-<p>程序员可以通过BeanFactoryPostProcessor间接的设置BeanFactory，比如上文中的CustomEditorConfigurer就是一个BeanFactoryPostProcessor，我们可以通过它向BeanFactory中添加自定义的PropertyEditor。</p>
-<h2 id="FactoryBean"><a href="#FactoryBean" class="headerlink" title="FactoryBean"></a>FactoryBean</h2><p>允许程序员自定义一个对象通过FactoryBean间接的放到Spring容器中成为一个Bean。</p>
-<p>那么它和@Bean的区别是什么？因为@Bean也可以自定义一个对象，让这个对象成为一个Bean。</p>
-<p>区别在于利用FactoryBean可以更加强大，因为你通过定义一个XxFactoryBean的类，可以再去实现Spring中的其他接口，比如如果你实现了BeanFactoryAware接口，那么你可以在你的XxFactoryBean中获取到Bean工厂，从而使用Bean工厂做更多你想做的，而@Bean则不行。</p>
-<h2 id="Spring中的“父子”"><a href="#Spring中的“父子”" class="headerlink" title="Spring中的“父子”"></a>Spring中的“父子”</h2><ol>
-<li>父子类</li>
-<li>父子BeanDefinition</li>
-<li>父子BeanFactory</li>
-<li>父子ApplicationContext</li>
+<h3 id="13-初始化"><a href="#13-初始化" class="headerlink" title="13. 初始化"></a>13. 初始化</h3><ol>
+<li>((InitializingBean) bean).afterPropertiesSet();</li>
+<li>执行BeanDefinition中指定的初始化方法</li>
 </ol>
-<h3 id="父子类"><a href="#父子类" class="headerlink" title="父子类"></a>父子类</h3><p>父子类是Java中的概念，在Spring中，当给某个类创建Bean的过程中，Spring不仅仅会对本类中的属性进行自动注入，同时也会对父类的属性进行自动注入。</p>
-<h3 id="父子BeanDefinition"><a href="#父子BeanDefinition" class="headerlink" title="父子BeanDefinition"></a>父子BeanDefinition</h3><p>父子BeanDefinition是Spring中的概念，Spring在根据BeanDefinition创建Bean的过程中，会先看当前BeanDefinition是否存在父BeanDefinition，如果存在则需要进行合并，合并就是把子BeanDefinition和父BeanDefinition中所定义的属性整合起来（如果存在某个属性在父子BeanDefinition中都存在，那么取子BeanDefinition中的属性）</p>
-<h3 id="父子BeanFactory"><a href="#父子BeanFactory" class="headerlink" title="父子BeanFactory"></a>父子BeanFactory</h3><p>BeanFactory是一个Bean的容器，在Spring中，当我们在使用某个BeanFactory去获取Bean时，如果本BeanFactory中不存在该Bean，同时又有父BeanFactory，那么则会检查父BeanFactory是否存在该Bean，如果也不存在，那么则会创建Bean</p>
-<h3 id="父子ApplicationContext"><a href="#父子ApplicationContext" class="headerlink" title="父子ApplicationContext"></a>父子ApplicationContext</h3><p>父子ApplicationContext和父子BeanFactory类似，子ApplicationContext除开可以使用父ApplicationContext来获取Bean之外，还可以使用父ApplicationContext中其他的东西，比如ApplicationListener</p>
+<h3 id="14-初始化后"><a href="#14-初始化后" class="headerlink" title="14. 初始化后"></a>14. 初始化后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessAfterInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="Bean的销毁过程"><a href="#Bean的销毁过程" class="headerlink" title="Bean的销毁过程"></a>Bean的销毁过程</h2><h3 id="1-容器关闭"><a href="#1-容器关闭" class="headerlink" title="1. 容器关闭"></a>1. 容器关闭</h3><h3 id="2-发布ContextClosedEvent事件"><a href="#2-发布ContextClosedEvent事件" class="headerlink" title="2. 发布ContextClosedEvent事件"></a>2. 发布ContextClosedEvent事件</h3><h3 id="3-调用LifecycleProcessor的onClose方法"><a href="#3-调用LifecycleProcessor的onClose方法" class="headerlink" title="3. 调用LifecycleProcessor的onClose方法"></a>3. 调用LifecycleProcessor的onClose方法</h3><h3 id="4-销毁单例Bean"><a href="#4-销毁单例Bean" class="headerlink" title="4. 销毁单例Bean"></a>4. 销毁单例Bean</h3><ol>
+<li>找出所有DisposableBean(实现了DisposableBean接口的Bean)</li>
+<li>遍历每个DisposableBean</li>
+<li>找出依赖了当前DisposableBean的其他Bean，将这些Bean从单例池中移除掉</li>
+<li>调用DisposableBean的destroy()方法</li>
+<li>找到当前DisposableBean所包含的inner beans，将这些Bean从单例池中移除掉 </li>
+</ol>
+<p>这里涉及到一个设计模式：<strong>适配器模式</strong></p>
+<p>在销毁时，Spring会找出实现了DisposableBean接口的Bean。</p>
+<p>但是我们在定义一个Bean时，如果这个Bean实现了DisposableBean接口，或者实现了AutoCloseable接口，或者在BeanDefinition中指定了destroyMethodName，那么这个Bean都属于“DisposableBean”，这些Bean在容器关闭时都要调用相应的销毁方法。</p>
+<p>所以，这里就需要进行适配，将实现了DisposableBean接口、或者AutoCloseable接口等适配成实现了DisposableBean接口，所以就用到了DisposableBeanAdapter，会把实现了AutoCloseable接口的类封装成DisposableBeanAdapter，而DisposableBeanAdapter实现了DisposableBean接口。</p>
 ]]></content>
       <categories>
         <category>框架源码</category>
@@ -646,90 +609,127 @@
       </tags>
   </entry>
   <entry>
-    <title>Spring中Bean的生命周期</title>
-    <url>/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
-    <content><![CDATA[<p>Spring最重要的功能就是帮助程序员创建对象（也就是IOC），而启动Spring就是为创建Bean对象做准备，所以我们先明白Spring到底是则呢怎么去创建Bean的，也就是先弄明白Bean的生命周期。</p>
-<p>Bean的生命周期就是指：<strong>在Spring中，一个Bean是如何生成的，如何销毁的？</strong></p>
+    <title>Spring中的核心概念</title>
+    <url>/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/</url>
+    <content><![CDATA[<h2 id="BeanDefinition"><a href="#BeanDefinition" class="headerlink" title="BeanDefinition"></a>BeanDefinition</h2><p>Bean的定义，BeanDefinition可以理解为底层源码级别的一个概念，也可以理解为Spring提供的一种<strong>API使用</strong>的方式。</p>
 <a id="more"></a>
 
-<p><img src="/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/Bean%E7%9A%84%E7%94%9F%E6%88%90%E8%BF%87%E7%A8%8B.jpg" alt="Bean的生命周期"></p>
-<h2 id="Bean的生成过程"><a href="#Bean的生成过程" class="headerlink" title="Bean的生成过程"></a>Bean的生成过程</h2><h3 id="1-生成BeanDefinition"><a href="#1-生成BeanDefinition" class="headerlink" title="1.生成BeanDefinition"></a>1.生成BeanDefinition</h3><p>Spring启动的时候会进行扫描，会先调用</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br></pre></td></tr></table></figure>
-<p>拿到所指定的包路径下的所有文件资源（******.class文件）</p>
-<p>然后会遍历每个Resource，为每个Resource生成一个MetadataReader对象，这个对象拥有三个功能：</p>
+<h2 id="BeanDefinitionReader"><a href="#BeanDefinitionReader" class="headerlink" title="BeanDefinitionReader"></a>BeanDefinitionReader</h2><h3 id="AnnotatedBeanDefinitionReader"><a href="#AnnotatedBeanDefinitionReader" class="headerlink" title="AnnotatedBeanDefinitionReader"></a>AnnotatedBeanDefinitionReader</h3><p>可以直接把某个类转换为BeanDefinition，并且会解析该类上的注解</p>
+<p>注意：它能解析的注解是：@Conditional，@Scope、@Lazy、@Primary、@DependsOn、@Role、@Description</p>
+<h3 id="XmlBeanDefinitionReader"><a href="#XmlBeanDefinitionReader" class="headerlink" title="XmlBeanDefinitionReader"></a>XmlBeanDefinitionReader</h3><p>可以解析&lt;bean/&gt;标签</p>
+<h3 id="ClassPathBeanDefinitionScanner"><a href="#ClassPathBeanDefinitionScanner" class="headerlink" title="ClassPathBeanDefinitionScanner"></a>ClassPathBeanDefinitionScanner</h3><p>这个并不是BeanDefinitionReader，但是它的作用和BeanDefinitionReader类似，它可以进行扫描，扫描某个包路径，对扫描到的类进行解析，比如，扫描到的类上如果存在@Component注解，那么就会把这个类解析为一个BeanDefinition</p>
+<h2 id="BeanFactory"><a href="#BeanFactory" class="headerlink" title="BeanFactory"></a>BeanFactory</h2><p>Spring中比较核心的是BeanFactory的实现类是<strong>DefaultListableBeanFactory</strong></p>
+<p><img src="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/default-listable-bean-factory.png" alt="default-listable-bean-factory"></p>
+<p>实现接口也表示他具有以下的功能</p>
 <ol>
-<li>获取对应的Resource资源</li>
-<li>获取Resource对应的class元数据信息，包括类的名字，是不是接口、是不是一个注解、是不是抽象类、有没有父类，父类的名字，所实现的所有接口的名字，内部类的类名等等</li>
-<li>获取Resource对应的class上的注解信息，当前类上有哪些注解，当前类中有哪些方法上有注解</li>
+<li>AliasRegistry：支持别名功能，一个名字可以对应多个别名</li>
+<li>BeanDefinitionRegistry：可以支持注册，删除，保存，获取某个BeanDefintion</li>
+<li>BeanFactory：Bean工厂，可以根据Bean的名称、类型、别名获的Bean对象</li>
+<li>SingletonBeanRegistry：可以注册，获取某个单例Bean</li>
+<li>SimpleAliasRegistry：是一个类，实现了AliasRegistry接口中所定义的功能，支持别名功能</li>
+<li>ListableBeanFactory：在BeanFactory的基础上，增加了其他功能，可以获取所有BeanDefinition的beanNames，可以根据某个类型获取对应的beanNames，可以根据某个类型获取{类型：对应的Bean}的映射关系</li>
+<li>HierarchicalBeanFactory：在BeanFactory的基础上，添加了获取父BeanFactory的功能</li>
+<li>DefaultSingletonBeanRegistry：它是一个类，SimpleAliasRegistry的子类，支持别名功能，同时实现了SingletonBeanRegistry接口，拥有了直接注册、获取某个<strong>单例</strong>Bean的功能</li>
+<li>ConfigurableBeanFactory：在HierarchicalBeanFactory和SingletonBeanRegistry的基础上，添加了设置父BeanFactory、类加载器（表示可以指定某个类加载器进行类的加载）、设置Spring EL表达式解析器（表示该BeanFactory可以解析EL表达式）、设置类型转化服务（表示该BeanFactory可以进行类型转化）、可以添加BeanPostProcessor（表示该BeanFactory支持Bean的后置处理器），可以合并BeanDefinition，可以销毁某个Bean等等功能</li>
+<li>FactoryBeanRegistrySupport：DefaultSingletonBeanRegistry的子类，支持了FactoryBean的功能</li>
+<li>AutowireCapableBeanFactory：是直接继承了BeanFactory，在BeanFactory的基础上，支持在创建Bean的过程中能对Bean进行自动装配</li>
+<li>AbstractBeanFactory：实现了ConfigurableBeanFactory接口，继承了FactoryBeanRegistrySupport，这个BeanFactory的功能已经很全面了，但是不能自动装配和获取beanNames</li>
+<li>ConfigurableListableBeanFactory：继承了ListableBeanFactory、AutowireCapableBeanFactory、ConfigurableBeanFactory</li>
+<li>AbstractAutowireCapableBeanFactory：继承了AbstractBeanFactory，实现了AutowireCapableBeanFactory，拥有了自动装配的功能</li>
+<li>DefaultListableBeanFactory：继承了AbstractAutowireCapableBeanFactory，实现了ConfigurableListableBeanFactory接口和BeanDefinitionRegistry接口，所以DefaultListableBeanFactory的功能很强大</li>
 </ol>
-<p>在生成MetadataReader对象时，会利用<strong>ASM</strong>技术解析class文件，得到类的元数据集信息合注解信息，在这个过程中也会利用ClassLoader去加载注解类（<strong>ClassUtils.getDefaultClassLoader()所获得的类加载器</strong>），但是不会加载本类。</p>
-<p>有了MetadataReader对象，就相当于有了当前类的所有信息，但是当前类并没有加载，也是可以理解的，真正在用到这个类的时候才加载。</p>
-<p>然后利用MetadataReader对象生成一个ScannedGenericBeanDefinition对象，<strong>注意此时的BeanDefinition对象中的beanClass属性存储的是当前类的名字，而不是class对象</strong>。（beanClass属性的类型是Object，它即可以存储类的名字，也可以存储class对象）</p>
-<h3 id="2-合并BeanDefinition"><a href="#2-合并BeanDefinition" class="headerlink" title="2.合并BeanDefinition"></a>2.合并BeanDefinition</h3><p>如果某个BeanDefinition存在父BeanDefinition，那么则要进行合并，递归到往上找到父类，用父类的BeanDefinition新建一个RootBeanDefinition，再用子类的属性覆盖父类的属性。（ 在这个过程中，父类和子类存放在beanDefinitionMap当中的BeanDefinition其实是没有改变的，而是新生成了一个RootBeanDefinition存放在了mergedBeanDefinitions这个map里）</p>
-<h3 id="3-加载类"><a href="#3-加载类" class="headerlink" title="3. 加载类"></a>3. 加载类</h3><p>有了BeanDefinition之后，后续就会基于BeanDefinition去创建Bean，而创建Bean就必须实例化对象，而实例化就必须先加载当前BeanDefinition所对应的class，在AbstractAutowireCapableBeanFactory类的createBean()方法中，一开始就会调用：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Class&lt;?&gt; resolvedClass = resolveBeanClass(mbd, beanName);</span><br></pre></td></tr></table></figure>
-
-
-<p>这行代码就是去加载类，该方法是这么实现的：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (mbd.hasBeanClass()) &#123;</span><br><span class="line">    <span class="keyword">return</span> mbd.getBeanClass();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> AccessController.doPrivileged((PrivilegedExceptionAction&lt;Class&lt;?&gt;&gt;) () -&gt;</span><br><span class="line">        doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> doResolveBeanClass(mbd, typesToMatch);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public boolean hasBeanClass() &#123;</span><br><span class="line">    return (this.beanClass instanceof Class);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果beanClass属性的类型是Class，那么就直接返回，如果不是，则会根据类名进行加载（doResolveBeanClass方法所做的事情）</p>
-<p>会利用BeanFactory所设置的类加载器来加载类，如果没有设置，则默认使用**ClassUtils.getDefaultClassLoader()**所返回的类加载器来加载。</p>
-<h4 id="ClassUtils-getDefaultClassLoader"><a href="#ClassUtils-getDefaultClassLoader" class="headerlink" title="ClassUtils.getDefaultClassLoader()"></a><strong>ClassUtils.getDefaultClassLoader()</strong></h4><ol>
-<li>优先获取当前线程中的ClassLoader</li>
-<li>如果为空，则获取加载ClassUtils类的类加载器（正常情况下，就是AppClassLoader，但是如果是在Tomcat中运行，那么则会是Tomcat中为每个应用所创建的WebappClassLoader）</li>
-<li>如果为空，那么则是bootstrap类加载器加载的ClassUtils类，那则获取系统类加载器进行加载</li>
+<p>DefaultListableBeanFactory支持的功能：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">AbstractBeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition().getBeanDefinition();</span><br><span class="line">beanDefinition.setBeanClass(User.class);</span><br><span class="line"></span><br><span class="line">DefaultListableBeanFactory beanFactory = <span class="keyword">new</span> DefaultListableBeanFactory();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册BeanDefinition</span></span><br><span class="line">beanFactory.registerBeanDefinition(<span class="string">&quot;user&quot;</span>, beanDefinition);</span><br><span class="line"><span class="comment">// 注册别名</span></span><br><span class="line">beanFactory.registerAlias(<span class="string">&quot;user&quot;</span>, <span class="string">&quot;user1&quot;</span>);</span><br><span class="line"><span class="comment">// 注册BeanPostProcessor</span></span><br><span class="line">beanFactory.addBeanPostProcessor(<span class="keyword">new</span> DemoBeanPostProcessor());</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取Bean对象</span></span><br><span class="line">System.out.println(beanFactory.getBean(<span class="string">&quot;user1&quot;</span>));</span><br><span class="line"><span class="comment">// 根据类型获取beanNames</span></span><br><span class="line">System.out.println(beanFactory.getBeanNamesForType(User.class));</span><br></pre></td></tr></table></figure>
+<h2 id="ApplicationContext"><a href="#ApplicationContext" class="headerlink" title="ApplicationContext"></a>ApplicationContext</h2><p>首先ApplicationContext是个接口，可以把它理解为一个特殊的BeanFactory</p>
+<p><img src="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/application-context.png" alt="application-context"></p>
+<ol>
+<li>HierarchicalBeanFactory：拥有获取父BeanFactory的功能</li>
+<li>ListableBeanFactory：拥有获取beanNames的功能</li>
+<li>ResourcePatternResolver：资源加载器，可以一次性获取多个资源（文件资源等等）</li>
+<li>EnvironmentCapable：可以获取运行时环境（没有设置运行时环境功能）</li>
+<li>ApplicationEventPublisher：拥有广播事件的功能（没有添加事件监听器的功能）</li>
+<li>MessageSource：拥有国际化功能</li>
 </ol>
-<h3 id="4-实例化前"><a href="#4-实例化前" class="headerlink" title="4. 实例化前"></a>4. 实例化前</h3><p>允许第三方可以不按照Spring的正常流程来创建一个Bean。</p>
-<p>可以利用InstantiationAwareBeanPostProcessor的postProcessBeforeInstantiation方法来提前返回一个Bean对象，得到对象后会直接</p>
-<p>跳到进行<strong>Bean初始化</strong>的方法，然后直接结束Bean的生命周期</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">applyBeanPostProcessorsBeforeInstantiation</span><span class="params">(Class&lt;?&gt; beanClass, String beanName)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">      <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">         InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">         Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);</span><br><span class="line">         <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="5-推断构造方法"><a href="#5-推断构造方法" class="headerlink" title="5. 推断构造方法"></a>5. 推断构造方法</h3><p>选择一个合适的构造器用来创建实例对象</p>
-<h3 id="6-实例化"><a href="#6-实例化" class="headerlink" title="6. 实例化"></a>6. 实例化</h3><p>构造方法反射得到一个实例</p>
-<h3 id="7-BeanDefinition的后置处理"><a href="#7-BeanDefinition的后置处理" class="headerlink" title="7. BeanDefinition的后置处理"></a>7. BeanDefinition的后置处理</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">        MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;</span><br><span class="line">        bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里可以处理BeanDefinition，但是此时实例对象已经生成好了，所以修改beanClass已经没用了，但是可以修改PropertyValues，比如：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LubanMergedBeanDefinitionPostProcessor</span> <span class="keyword">implements</span> <span class="title">MergedBeanDefinitionPostProcessor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessMergedBeanDefinition</span><span class="params">(RootBeanDefinition beanDefinition, Class&lt;?&gt; beanType, String beanName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (beanName.equals(<span class="string">&quot;userService&quot;</span>)) &#123;</span><br><span class="line">            <span class="comment">//实例对象已经生成，此时变更没有意义</span></span><br><span class="line">            beanDefinition.setBeanClass(User.class); </span><br><span class="line">            beanDefinition.getPropertyValues().add(<span class="string">&quot;name&quot;</span>,<span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="8-实例化后（填充属性前）"><a href="#8-实例化后（填充属性前）" class="headerlink" title="8. 实例化后（填充属性前）"></a>8. 实例化后（填充属性前）</h3><p>可以自己写一个InstantiationAwareBeanPostProcessor，然后重写postProcessAfterInstantiation方法返回false,那么则不会进行属性填充</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">      <span class="keyword">if</span> (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) &#123;</span><br><span class="line">         <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="9-填充属性"><a href="#9-填充属性" class="headerlink" title="9. 填充属性"></a>9. 填充属性</h3><p>使用Spring自带的Autowired，默认是关闭的(AUTOWIRE_NO)</p>
-<p>其实就是Spring自动的根据某个类中的set方法来找bean</p>
-<ul>
-<li>byName就是根据某个set方法所对应的属性名去找bean</li>
-<li>byType，就是根据某个set方法的参数类型去找bean</li>
-</ul>
-<h3 id="10-填充属性后"><a href="#10-填充属性后" class="headerlink" title="10. 填充属性后"></a>10. 填充属性后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 调用BeanPostProcessor分别解析@Autowired、@Resource、@Value，得到属性值</span></span><br><span class="line">      PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">         <span class="keyword">if</span> (filteredPds == <span class="keyword">null</span>) &#123;</span><br><span class="line">            filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);</span><br><span class="line">         &#125;</span><br><span class="line">         pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);</span><br><span class="line">         <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      pvs = pvsToUse;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>@Autowired注解的 AutowiredAnnotationBeanPostProcessor</p>
-<p>@Resource注解的 CommonAnnotationBeanPostProcessor</p>
-</blockquote>
-<h3 id="11-执行Aware"><a href="#11-执行Aware" class="headerlink" title="11. 执行Aware"></a>11. 执行Aware</h3><ol>
-<li>((BeanNameAware) bean).setBeanName(beanName);</li>
-<li>((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);</li>
-<li>((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.<strong>this</strong>);</li>
+<h3 id="AnnotationConfigApplicationContext"><a href="#AnnotationConfigApplicationContext" class="headerlink" title="AnnotationConfigApplicationContext"></a>AnnotationConfigApplicationContext</h3><p><img src="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/annotation-config-application-context.png" alt="annotation-config-application-context"></p>
+<ol>
+<li>ConfigurableApplicationContext：继承了ApplicationContext接口，增加了，添加事件监听器、添加BeanFactoryPostProcessor、设置Environment，获取ConfigurableListableBeanFactory等功能</li>
+<li>AbstractApplicationContext：实现了ConfigurableApplicationContext接口</li>
+<li>GenericApplicationContext：继承了AbstractApplicationContext，实现了BeanDefinitionRegistry接口，拥有了所有ApplicationContext的功能，并且可以注册BeanDefinition，注意这个类中有一个属性(DefaultListableBeanFactory <strong>beanFactory</strong>)</li>
+<li>AnnotationConfigRegistry：可以单独注册某个为类为BeanDefinition（可以处理该类上的**@Configuration注解<strong>，已经可以处理</strong>@Bean注解**），同时可以扫描</li>
+<li>AnnotationConfigApplicationContext：继承了GenericApplicationContext，实现了AnnotationConfigRegistry接口，拥有了以上所有的功能</li>
 </ol>
-<h3 id="12-初始化前"><a href="#12-初始化前" class="headerlink" title="12. 初始化前"></a>12. 初始化前</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessBeforeInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="ClassPathXmlApplicationContext"><a href="#ClassPathXmlApplicationContext" class="headerlink" title="ClassPathXmlApplicationContext"></a>ClassPathXmlApplicationContext</h3><p><img src="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/xml-web-application-context.png" alt="xml-web-application-context"></p>
+<p>它也是继承了AbstractApplicationContext，但是相对于AnnotationConfigApplicationContext而言，功能没有AnnotationConfigApplicationContext强大，比如不能注册BeanDefinition</p>
+<h3 id="国际化"><a href="#国际化" class="headerlink" title="国际化"></a>国际化</h3><p>先定义一个MessageSource:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> MessageSource <span class="title">messageSource</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ResourceBundleMessageSource messageSource = <span class="keyword">new</span> ResourceBundleMessageSource();</span><br><span class="line">    messageSource.setBasename(<span class="string">&quot;messages&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> messageSource;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>有了这个Bean，你可以在你任意想要进行国际化的地方使用该MessageSource。</p>
+<p>同时，因为ApplicationContext也拥有国家化的功能，所以可以直接这么用：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">annotationConfigApplicationContext.getMessage(<span class="string">&quot;test&quot;</span>, <span class="keyword">null</span>, <span class="keyword">new</span> Locale(<span class="string">&quot;en_CN&quot;</span>))</span><br></pre></td></tr></table></figure>
+<h3 id="资源加载"><a href="#资源加载" class="headerlink" title="资源加载"></a>资源加载</h3><p>ApplicationContext还拥有资源加载的功能，比如，可以直接利用ApplicationContext获取某个文件的内容：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource resource = annotationConfigApplicationContext.getResource(<span class="string">&quot;file://D:\\IdeaProjects\\spring-framework\\demo\\src\\main\\java\\com\\demo\\entity\\User.java&quot;</span>);</span><br><span class="line">System.out.println(resource.contentLength());</span><br></pre></td></tr></table></figure>
+<p>你可以想想，如果你不使用ApplicationContext，而是自己来实现这个功能，就比较费时间了。</p>
+<p>还比如你可以：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource resource = annotationConfigApplicationContext.getResource(<span class="string">&quot;classpath:com/demo/entity/User.class&quot;</span>);</span><br><span class="line">System.out.println(resource.contentLength());</span><br></pre></td></tr></table></figure>
 
 
-<h3 id="13-初始化"><a href="#13-初始化" class="headerlink" title="13. 初始化"></a>13. 初始化</h3><ol>
-<li>((InitializingBean) bean).afterPropertiesSet();</li>
-<li>执行BeanDefinition中指定的初始化方法</li>
+<p>还可以一次性获取多个：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource[] resources=annotationConfgigApplicationContext.getResources(<span class="string">&quot;classpath:com/demo/service/*.class&quot;</span>);</span><br><span class="line"><span class="keyword">for</span> (Resource resource : resources) &#123;</span><br><span class="line">    System.out.println(resource.contentLength());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="获取运行时环境"><a href="#获取运行时环境" class="headerlink" title="获取运行时环境"></a>获取运行时环境</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 获取JVM所允许的操作系统的环境</span></span><br><span class="line">annotationConfigApplicationContext.getEnvironment().getSystemEnvironment();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取JVM本身的一些属性，包括-D所设置的</span></span><br><span class="line">annotationConfigApplicationContext.getEnvironment().getSystemProperties();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 还可以直接获取某个环境或properties文件中的属性</span></span><br><span class="line">annotationConfigApplicationContext.getEnvironment().getProperty(<span class="string">&quot;testyyy&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>注意，可以利用</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@PropertySource(&quot;classpath:application.properties&quot;)</span></span><br></pre></td></tr></table></figure>
+<p>来使得某个properties文件中的参数添加到运行时环境中</p>
+<h3 id="事件发布"><a href="#事件发布" class="headerlink" title="事件发布"></a>事件发布</h3><p>先定义一个事件监听器</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ApplicationListener <span class="title">applicationListener</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> ApplicationListener() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onApplicationEvent</span><span class="params">(ApplicationEvent event)</span> </span>&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;接收到了一个事件&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>然后发布一个事件：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">annotationConfigApplicationContext.publishEvent(<span class="string">&quot;kkk&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="类型转化"><a href="#类型转化" class="headerlink" title="类型转化"></a>类型转化</h2><h3 id="PropertyEditor"><a href="#PropertyEditor" class="headerlink" title="PropertyEditor"></a>PropertyEditor</h3><p>JDK中提供的类型转化工具类</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StringToUserPropertyEditor</span> <span class="keyword">extends</span> <span class="title">PropertyEditorSupport</span> <span class="keyword">implements</span> <span class="title">PropertyEditor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setAsText</span><span class="params">(String text)</span> <span class="keyword">throws</span> IllegalArgumentException </span>&#123;</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName(text);</span><br><span class="line">        <span class="keyword">this</span>.setValue(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">StringToUserPropertyEditor propertyEditor = <span class="keyword">new</span> StringToUserPropertyEditor();</span><br><span class="line">propertyEditor.setAsText(<span class="string">&quot;1&quot;</span>);</span><br><span class="line">User value = (User) propertyEditor.getValue();</span><br><span class="line">System.out.println(value);</span><br></pre></td></tr></table></figure>
+
+
+<p>如何向Spring中注册PropertyEditor：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> CustomEditorConfigurer <span class="title">customEditorConfigurer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    CustomEditorConfigurer customEditorConfigurer = <span class="keyword">new</span> CustomEditorConfigurer();</span><br><span class="line">    Map&lt;Class&lt;?&gt;, Class&lt;? extends PropertyEditor&gt;&gt; propertyEditorMap = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">    propertyEditorMap.put(User.class, StringToUserPropertyEditor.class);</span><br><span class="line">    customEditorConfigurer.setCustomEditors(propertyEditorMap);</span><br><span class="line">    <span class="keyword">return</span> customEditorConfigurer;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>假设现在有如下Bean:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Value(&quot;true&quot;)</span></span><br><span class="line">    User test;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(test);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么test属性就能正常的完成属性赋值</p>
+<h3 id="ConversionService"><a href="#ConversionService" class="headerlink" title="ConversionService"></a>ConversionService</h3><p>Spring中提供的类型转化服务，它比PropertyEditor更强大</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StringToUserConverter</span> <span class="keyword">implements</span> <span class="title">ConditionalGenericConverter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">matches</span><span class="params">(TypeDescriptor sourceType, TypeDescriptor targetType)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> sourceType.getType().equals(String.class) &amp;&amp; targetType.getType().equals(User.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Set&lt;ConvertiblePair&gt; <span class="title">getConvertibleTypes</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Collections.singleton(<span class="keyword">new</span> ConvertiblePair(String.class, User.class));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">convert</span><span class="params">(Object source, TypeDescriptor sourceType, TypeDescriptor targetType)</span> </span>&#123;</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName((String)source);</span><br><span class="line">        <span class="keyword">return</span> user;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">DefaultConversionService conversionService = <span class="keyword">new</span> DefaultConversionService();</span><br><span class="line">conversionService.addConverter(<span class="keyword">new</span> StringToUserConverter());</span><br><span class="line">User value = conversionService.convert(<span class="string">&quot;1&quot;</span>, User.class);</span><br><span class="line">System.out.println(value);</span><br></pre></td></tr></table></figure>
+
+
+<p>如何向Spring中注册ConversionService：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ConversionServiceFactoryBean <span class="title">conversionService</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ConversionServiceFactoryBean conversionServiceFactoryBean = <span class="keyword">new</span> ConversionServiceFactoryBean();</span><br><span class="line">    conversionServiceFactoryBean.setConverters(Collections.singleton(<span class="keyword">new</span> StringToUserConverter()));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> conversionServiceFactoryBean;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="TypeConverter"><a href="#TypeConverter" class="headerlink" title="TypeConverter"></a>TypeConverter</h3><p>整合了PropertyEditor和ConversionService的功能，是Spring内部用的</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">SimpleTypeConverter typeConverter = <span class="keyword">new</span> SimpleTypeConverter();</span><br><span class="line">typeConverter.registerCustomEditor(User.class, <span class="keyword">new</span> StringToUserPropertyEditor());</span><br><span class="line"><span class="comment">//typeConverter.setConversionService(conversionService);</span></span><br><span class="line">User value = typeConverter.convertIfNecessary(<span class="string">&quot;1&quot;</span>, User.class);</span><br><span class="line">System.out.println(value);</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="BeanPostProcessor"><a href="#BeanPostProcessor" class="headerlink" title="BeanPostProcessor"></a>BeanPostProcessor</h2><p>Bean的后置处理器，可以在创建每个Bean的过程中进行干涉，是属于BeanFactory中一个属性，讲Bean的生命周期中详细讲。</p>
+<h2 id="BeanFactoryPostProcessor"><a href="#BeanFactoryPostProcessor" class="headerlink" title="BeanFactoryPostProcessor"></a>BeanFactoryPostProcessor</h2><p>Bean工厂的后置处理器，是属于ApplicationContext中的一个属性，是ApplicationContext在实例化一个BeanFactory后，可以利用BeanFactoryPostProcessor继续处理BeanFactory。</p>
+<p>程序员可以通过BeanFactoryPostProcessor间接的设置BeanFactory，比如上文中的CustomEditorConfigurer就是一个BeanFactoryPostProcessor，我们可以通过它向BeanFactory中添加自定义的PropertyEditor。</p>
+<h2 id="FactoryBean"><a href="#FactoryBean" class="headerlink" title="FactoryBean"></a>FactoryBean</h2><p>允许程序员自定义一个对象通过FactoryBean间接的放到Spring容器中成为一个Bean。</p>
+<p>那么它和@Bean的区别是什么？因为@Bean也可以自定义一个对象，让这个对象成为一个Bean。</p>
+<p>区别在于利用FactoryBean可以更加强大，因为你通过定义一个XxFactoryBean的类，可以再去实现Spring中的其他接口，比如如果你实现了BeanFactoryAware接口，那么你可以在你的XxFactoryBean中获取到Bean工厂，从而使用Bean工厂做更多你想做的，而@Bean则不行。</p>
+<h2 id="Spring中的“父子”"><a href="#Spring中的“父子”" class="headerlink" title="Spring中的“父子”"></a>Spring中的“父子”</h2><ol>
+<li>父子类</li>
+<li>父子BeanDefinition</li>
+<li>父子BeanFactory</li>
+<li>父子ApplicationContext</li>
 </ol>
-<h3 id="14-初始化后"><a href="#14-初始化后" class="headerlink" title="14. 初始化后"></a>14. 初始化后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessAfterInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h2 id="Bean的销毁过程"><a href="#Bean的销毁过程" class="headerlink" title="Bean的销毁过程"></a>Bean的销毁过程</h2><h3 id="1-容器关闭"><a href="#1-容器关闭" class="headerlink" title="1. 容器关闭"></a>1. 容器关闭</h3><h3 id="2-发布ContextClosedEvent事件"><a href="#2-发布ContextClosedEvent事件" class="headerlink" title="2. 发布ContextClosedEvent事件"></a>2. 发布ContextClosedEvent事件</h3><h3 id="3-调用LifecycleProcessor的onClose方法"><a href="#3-调用LifecycleProcessor的onClose方法" class="headerlink" title="3. 调用LifecycleProcessor的onClose方法"></a>3. 调用LifecycleProcessor的onClose方法</h3><h3 id="4-销毁单例Bean"><a href="#4-销毁单例Bean" class="headerlink" title="4. 销毁单例Bean"></a>4. 销毁单例Bean</h3><ol>
-<li>找出所有DisposableBean(实现了DisposableBean接口的Bean)</li>
-<li>遍历每个DisposableBean</li>
-<li>找出依赖了当前DisposableBean的其他Bean，将这些Bean从单例池中移除掉</li>
-<li>调用DisposableBean的destroy()方法</li>
-<li>找到当前DisposableBean所包含的inner beans，将这些Bean从单例池中移除掉 </li>
-</ol>
-<p>这里涉及到一个设计模式：<strong>适配器模式</strong></p>
-<p>在销毁时，Spring会找出实现了DisposableBean接口的Bean。</p>
-<p>但是我们在定义一个Bean时，如果这个Bean实现了DisposableBean接口，或者实现了AutoCloseable接口，或者在BeanDefinition中指定了destroyMethodName，那么这个Bean都属于“DisposableBean”，这些Bean在容器关闭时都要调用相应的销毁方法。</p>
-<p>所以，这里就需要进行适配，将实现了DisposableBean接口、或者AutoCloseable接口等适配成实现了DisposableBean接口，所以就用到了DisposableBeanAdapter，会把实现了AutoCloseable接口的类封装成DisposableBeanAdapter，而DisposableBeanAdapter实现了DisposableBean接口。</p>
+<h3 id="父子类"><a href="#父子类" class="headerlink" title="父子类"></a>父子类</h3><p>父子类是Java中的概念，在Spring中，当给某个类创建Bean的过程中，Spring不仅仅会对本类中的属性进行自动注入，同时也会对父类的属性进行自动注入。</p>
+<h3 id="父子BeanDefinition"><a href="#父子BeanDefinition" class="headerlink" title="父子BeanDefinition"></a>父子BeanDefinition</h3><p>父子BeanDefinition是Spring中的概念，Spring在根据BeanDefinition创建Bean的过程中，会先看当前BeanDefinition是否存在父BeanDefinition，如果存在则需要进行合并，合并就是把子BeanDefinition和父BeanDefinition中所定义的属性整合起来（如果存在某个属性在父子BeanDefinition中都存在，那么取子BeanDefinition中的属性）</p>
+<h3 id="父子BeanFactory"><a href="#父子BeanFactory" class="headerlink" title="父子BeanFactory"></a>父子BeanFactory</h3><p>BeanFactory是一个Bean的容器，在Spring中，当我们在使用某个BeanFactory去获取Bean时，如果本BeanFactory中不存在该Bean，同时又有父BeanFactory，那么则会检查父BeanFactory是否存在该Bean，如果也不存在，那么则会创建Bean</p>
+<h3 id="父子ApplicationContext"><a href="#父子ApplicationContext" class="headerlink" title="父子ApplicationContext"></a>父子ApplicationContext</h3><p>父子ApplicationContext和父子BeanFactory类似，子ApplicationContext除开可以使用父ApplicationContext来获取Bean之外，还可以使用父ApplicationContext中其他的东西，比如ApplicationListener</p>
 ]]></content>
       <categories>
         <category>框架源码</category>
@@ -831,7 +831,9 @@
 <p>可以直接使用如下代码进行测试：</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Object[] objects = <span class="keyword">new</span> Object[]&#123;<span class="keyword">new</span> A()&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 0</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;A.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;B.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;C.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 1</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;D.class&#125;, objects));</span><br></pre></td></tr></table></figure>
 <p>所以，我们可以发现，越匹配分数越低。</p>
-<h3 id="determineCandidateConstructors"><a href="#determineCandidateConstructors" class="headerlink" title="determineCandidateConstructors()"></a>determineCandidateConstructors()</h3>]]></content>
+<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><p><img src="/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/autowireConstructor.jpg" alt="autowireConstructor"></p>
+<h3 id="determineCandidateConstructors"><a href="#determineCandidateConstructors" class="headerlink" title="determineCandidateConstructors()"></a>determineCandidateConstructors()</h3><p><img src="/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/determineCandidateConstructors.jpg" alt="determineCandidateConstructors"></p>
+]]></content>
       <categories>
         <category>框架源码</category>
       </categories>
@@ -855,7 +857,7 @@
 </ol>
 <a id="more"></a>
 
-<h2 id="ConfigurationClassPostProcessor执行流程"><a href="#ConfigurationClassPostProcessor执行流程" class="headerlink" title="## ConfigurationClassPostProcessor执行流程"></a>## ConfigurationClassPostProcessor执行流程</h2><p><img src="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg" alt="ConfigurationBeanPostProsessor"></p>
+<h2 id="ConfigurationClassPostProcessor执行流程"><a href="#ConfigurationClassPostProcessor执行流程" class="headerlink" title="ConfigurationClassPostProcessor执行流程"></a>ConfigurationClassPostProcessor执行流程</h2><p><img src="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/ConfigurationBeanPostProsessor.jpg" alt="ConfigurationBeanPostProsessor"></p>
 <ol>
 <li>启动Spring时，需要传入一个AppConfig.class给ApplicationContext，ApplicationContext会根据AppConfig类封装成一个BeanDefinition，这种BeanDefinition我们把它称为配置类BeanDefinition。</li>
 <li>ConfigurationClassClassProcessor中会把配置类BeanDefinition取出来</li>
