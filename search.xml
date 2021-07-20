@@ -1,119 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Netty核心功能与线程模型</title>
-    <url>/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
-    <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
-<a id="more"></a>
-
-<p>开发工作量和难度都非常大： 例如客户端面临断线重连、 网络闪断、心跳处理、半包读写、 网络拥塞和异常流的处理等等。</p>
-<p>Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装，解决了上述问题。且Netty拥有高性能、 吞吐量更高，延迟更低，减少资源消耗，最小化不必要的内存复制等优点。</p>
-<p>Netty框架的目标大概可以理解为让业务代码从网络基础应用编码中分离，让开发可以专注开发业务代码，而不用写一大堆类似NIO的网络处理操作。</p>
-<h3 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h3><h4 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h4><p>Reactor 是一种设计模式，<a href="https://en.wikipedia.org/wiki/Reactor_pattern">wikipedia</a> 对其定义如下：</p>
-<blockquote>
-<p>Reactor 是一个或多个输入事件的处理模式，用于处理并发传递给服务处理程序的服务请求。服务处理程序判断传入请求发生的事件，并将它们同步的分派给关联的请求处理程序。</p>
-</blockquote>
-<p>Reactor 模式按照职责不同，通常可以把线程分为 Reactor 线程、IO 线程和业务线程：</p>
-<ul>
-<li>Reactor 线程：轮询通知发生IO的通道，并分派合适的 Handler 处理</li>
-<li>IO 线程：执行实际的读写操作</li>
-<li>业务线程：执行应用程序的业务逻辑</li>
-</ul>
-<h5 id="单线程版本"><a href="#单线程版本" class="headerlink" title="单线程版本"></a>单线程版本</h5><p>单线程版本其实就是用一个线程完成事件的通知，实际的I/O操作和业务处理</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png" alt="basic"></p>
-<p><strong>缺点</strong></p>
-<p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
-<h5 id="多线程版本"><a href="#多线程版本" class="headerlink" title="多线程版本"></a>多线程版本</h5><p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png" alt="multithreaded"></p>
-<p><strong>缺点</strong></p>
-<p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
-<h5 id="主从版本"><a href="#主从版本" class="headerlink" title="主从版本"></a>主从版本</h5><p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png" alt="master-slave"></p>
-<h4 id="Netty线程模型-1"><a href="#Netty线程模型-1" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h4><p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png" alt="netty"></p>
-<p><strong>模型解释</strong></p>
-<ol>
-<li>Netty抽象出两组线程池BossGroup和WorkerGroup，BossGroup专门负责接收客户端的连接，WorkGroup专门负责网络的读写</li>
-<li>BossGroup和WorkGroup都是NioEventLoopGroup</li>
-<li>NioEventLoopGroup相当于一个事件循环线程组，这个组中含有多个事件循环线程，每一个事件循环线程是NioEventLoop</li>
-<li>每个NioEventLoop都有一个selector，用于监听注册在其上的socketChannel的网络通讯</li>
-<li>每个Boss NioEventLoop线程内部循环执行的步骤<ul>
-<li>处理accept事件，与client建立连接，生成NioSocketChannel</li>
-<li>将NioSocketChannel注册到某个worker NioEventLoop上的selector</li>
-<li>处理任务队列的任务，即runAllTask</li>
-</ul>
-</li>
-<li>每个worker NioEventLoop处理NioSocketChannel业务时，会使用pipeline(管道)，管道中维护了很多handler处理器用来处理channel中的数据</li>
-</ol>
-<h3 id="Netty模块组件"><a href="#Netty模块组件" class="headerlink" title="Netty模块组件"></a>Netty模块组件</h3><h4 id="【Bootstrap、ServerBootStrap】："><a href="#【Bootstrap、ServerBootStrap】：" class="headerlink" title="【Bootstrap、ServerBootStrap】："></a>【Bootstrap、ServerBootStrap】：</h4><p>Bootstrap意思是引导，一个Netty应用通用由一个Bootstrap开始，主要作用是配置整个Netty程序，串联各个组件，Netty中Bootstrap类是客户端程序的启动引导类，ServerBootStrap是服务端的启动引导类</p>
-<h4 id="【Future、ChannelFuture】："><a href="#【Future、ChannelFuture】：" class="headerlink" title="【Future、ChannelFuture】："></a>【Future、ChannelFuture】：</h4><p>正如前面介绍,在Netty中所有的IO操作都是异步的，不能立刻得知消息是否被正确处理。</p>
-<p>但是可以过一会等他执行完成或者直接注册一个监听，具体的实现就是通过Future和ChannelFuture，他们可以注册一个监听，当操作执行完成或失败时监听会自动触发注册的监听事件。</p>
-<h4 id="【Channel】："><a href="#【Channel】：" class="headerlink" title="【Channel】："></a>【Channel】：</h4><p>Netty网络通信的组件，能够用于执行网络的I/O操作。Channel为用户提供：</p>
-<ol>
-<li><p>当前网络连接的通道的状态（例如是否打开？是否已连接）</p>
-</li>
-<li><p>网络连接的参数配置（例如接收缓冲区的大小）</p>
-</li>
-<li><p>提供异步的网络I/O操作（如建立连接，读写，绑定端口），异步调用意味着任何I/O调用都将立即返回，并且不保证在调用结束时所请求的I/O操作已完成。</p>
-</li>
-<li><p>调用立即返回一个ChannelFuture实例，通过注册监听器到ChannelFuture上，可以在I/O操作成功、失败或者取消时回调通知调用方。</p>
-</li>
-<li><p>支持关联I/O操作与对应的处理程序</p>
-<p>不同协议、不同的阻塞类型的连接都有不同的Chennle类型与之对应。</p>
-<p>下面是一些常用的Channel类型：</p>
-<blockquote>
-<p>NioSocketChannel，异步的客户端 TCP Socket 连接。</p>
-<p>NioServerSocketChannel，异步的服务器端 TCP Socket 连接。</p>
-<p>NioDatagramChannel，异步的 UDP 连接。</p>
-<p>NioSctpChannel，异步的客户端 Sctp 连接。</p>
-<p>NioSctpServerChannel，异步的 Sctp 服务器端连接。这些通道涵盖了 UDP 和 TCP 网络 IO 以及文件 IO。</p>
-</blockquote>
-</li>
-</ol>
-<h4 id="【Selector】"><a href="#【Selector】" class="headerlink" title="【Selector】:"></a>【Selector】:</h4><p>Netty基于Selector对象实现I/O多路复用，通过Selector一个线程可以监听多个连接的Channel事件。当向一个Selector中注册Channel后，Selector内部的机制就可以自动不断地查询(Select)这些注册的Channel是否有已就绪的I/O事件（例如可读，可写，网络连接完成等），这样程序就可以很简单的使用一个线程高效的管理多个Channel</p>
-<h4 id="【NioEventLoop】："><a href="#【NioEventLoop】：" class="headerlink" title="【NioEventLoop】："></a>【NioEventLoop】：</h4><p>NioEventLoop中维护了一个线程和任务队列，支持异步提交执行任务，线程启动时会调用NioEventLoop的run方法，执行I/O任务和非I/O任务：</p>
-<ul>
-<li>I/O任务，即selectionKey中ready的事件，如accept、connect、read、write等，由processsSelectedKeys方法触发。</li>
-<li>非I/O任务，添加到taskQueue中的任务，如register(),bind()等任务，有runAllTasks方法触发</li>
-</ul>
-<h4 id="【NioEventLoopGroup】："><a href="#【NioEventLoopGroup】：" class="headerlink" title="【NioEventLoopGroup】："></a>【NioEventLoopGroup】：</h4><p>NioEventLoopGroup，主要管理eventLoop的生命周期，可以理解为一个线程池，内部维护了一组线程，每个线程（NioEventLoop）负责处理多个Channel上的事件，而一个Channel只对应于一个线程。</p>
-<h4 id="【ChannelHandler】："><a href="#【ChannelHandler】：" class="headerlink" title="【ChannelHandler】："></a>【ChannelHandler】：</h4><p>ChannelHandler是一个接口，处理I/O事件或拦截I/O操作，并将其转发到其ChannelPipeline(业务处理链)中的下一个处理程序。</p>
-<p>ChanneHandler本身并没有提供很多方法，因为这个接口有许多的方法需要实现，方便使用期间，可以继承他的子类：</p>
-<blockquote>
-<p>ChannelInboundHandler 用于处理入站 I/O 事件。</p>
-<p>ChannelOutboundHandler 用于处理出站 I/O 操作。</p>
-</blockquote>
-<p>或者使用一下适配器类：</p>
-<blockquote>
-<p>ChannelInboundHandlerAdapter 用于处理入站 I/O 事件。</p>
-<p>ChannelOutboundHandlerAdapter 用于处理出站 I/O 操作。</p>
-</blockquote>
-<h4 id="【ChannelHandlerContext】："><a href="#【ChannelHandlerContext】：" class="headerlink" title="【ChannelHandlerContext】："></a>【ChannelHandlerContext】：</h4><p>保存Channel相关的所有上下文信息，同时关联一个ChannelHandler对象。</p>
-<h4 id="【ChannelPipeline】："><a href="#【ChannelPipeline】：" class="headerlink" title="【ChannelPipeline】："></a>【ChannelPipeline】：</h4><p>保存ChannelHandler的List，用于处理或拦截Channel的入站事件和出站操作</p>
-<p>ChannelPipeline实现了一种高级形式的拦截过滤器模式，是用户可以完全控制事件的处理方式，以及Channel中各个ChannelHandler如何相互相互。</p>
-<p>在Netty中每个Channel都有且仅有一个ChannelPipeline与之对应，他们的组成关系：</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/channel_pipeline.png" alt="channel_pipeline"></p>
-<p>一个Channel包含了一个ChannelPipeline，而ChannelPipeline中又维护一个由ChaennlHandlerContext组成的双向链表，并且每个ChannelHandlerContext中有关联着一个ChannelHandler。</p>
-<p>read事件(入站事件)和write事件(出站事件)在一个双向链表中，入站事件会从链表head往后传递到最后一个入站的handler，出站事件会从链表tail往前传递到最前一个出战的handler，两种类型的handler互不干扰</p>
-<h3 id="ByteBuf详解"><a href="#ByteBuf详解" class="headerlink" title="ByteBuf详解"></a>ByteBuf详解</h3><p>从结构上来说，ByteBuf有一串字节数组构成。数组中每个字节用来存放信息。</p>
-<p>ByteBuf提供了两个索引，一个用于读取数据，一个用于写入数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置</p>
-<p>当从ByteBuf读取时，它的readIndex(读索引)将会根据读取的字节递增。</p>
-<p>同样当写ByteBuf时，他的writeIndex也会根据写入的字节数进行递增。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/byte-buf.png" alt="ByteBuf"></p>
-<p>需要注意的是极限的情况是 readerIndex 刚好读到了 writerIndex 写入的地方。<br>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
-<blockquote>
-<p>已经读取的区域：[0,readerindex)</p>
-<p>可读取的区域：[readerindex,writerIndex)</p>
-<p> 可写的区域: [writerIndex,capacity)</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>分布式框架</category>
-      </categories>
-      <tags>
-        <tag>netty</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ApplicationContext启动过程</title>
     <url>/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/</url>
     <content><![CDATA[<h2 id="如何理解refresh-？"><a href="#如何理解refresh-？" class="headerlink" title="如何理解refresh()？"></a>如何理解refresh()？</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Load or refresh the persistent representation of the configuration,</span></span><br><span class="line"><span class="comment">   * which might an XML file, properties file, or relational database schema.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;As this is a startup method, it should destroy already created singletons</span></span><br><span class="line"><span class="comment">   * if it fails, to avoid dangling resources. In other words, after invocation</span></span><br><span class="line"><span class="comment">   * of that method, either all or no singletons at all should be instantiated.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> BeansException if the bean factory could not be initialized</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> IllegalStateException if already initialized and multiple refresh</span></span><br><span class="line"><span class="comment">   * attempts are not supported</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException</span>;</span><br></pre></td></tr></table></figure>
@@ -274,6 +161,119 @@
       </tags>
   </entry>
   <entry>
+    <title>Netty核心功能与线程模型</title>
+    <url>/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
+    <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
+<a id="more"></a>
+
+<p>开发工作量和难度都非常大： 例如客户端面临断线重连、 网络闪断、心跳处理、半包读写、 网络拥塞和异常流的处理等等。</p>
+<p>Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装，解决了上述问题。且Netty拥有高性能、 吞吐量更高，延迟更低，减少资源消耗，最小化不必要的内存复制等优点。</p>
+<p>Netty框架的目标大概可以理解为让业务代码从网络基础应用编码中分离，让开发可以专注开发业务代码，而不用写一大堆类似NIO的网络处理操作。</p>
+<h3 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h3><h4 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h4><p>Reactor 是一种设计模式，<a href="https://en.wikipedia.org/wiki/Reactor_pattern">wikipedia</a> 对其定义如下：</p>
+<blockquote>
+<p>Reactor 是一个或多个输入事件的处理模式，用于处理并发传递给服务处理程序的服务请求。服务处理程序判断传入请求发生的事件，并将它们同步的分派给关联的请求处理程序。</p>
+</blockquote>
+<p>Reactor 模式按照职责不同，通常可以把线程分为 Reactor 线程、IO 线程和业务线程：</p>
+<ul>
+<li>Reactor 线程：轮询通知发生IO的通道，并分派合适的 Handler 处理</li>
+<li>IO 线程：执行实际的读写操作</li>
+<li>业务线程：执行应用程序的业务逻辑</li>
+</ul>
+<h5 id="单线程版本"><a href="#单线程版本" class="headerlink" title="单线程版本"></a>单线程版本</h5><p>单线程版本其实就是用一个线程完成事件的通知，实际的I/O操作和业务处理</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png" alt="basic"></p>
+<p><strong>缺点</strong></p>
+<p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
+<h5 id="多线程版本"><a href="#多线程版本" class="headerlink" title="多线程版本"></a>多线程版本</h5><p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png" alt="multithreaded"></p>
+<p><strong>缺点</strong></p>
+<p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
+<h5 id="主从版本"><a href="#主从版本" class="headerlink" title="主从版本"></a>主从版本</h5><p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png" alt="master-slave"></p>
+<h4 id="Netty线程模型-1"><a href="#Netty线程模型-1" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h4><p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png" alt="netty"></p>
+<p><strong>模型解释</strong></p>
+<ol>
+<li>Netty抽象出两组线程池BossGroup和WorkerGroup，BossGroup专门负责接收客户端的连接，WorkGroup专门负责网络的读写</li>
+<li>BossGroup和WorkGroup都是NioEventLoopGroup</li>
+<li>NioEventLoopGroup相当于一个事件循环线程组，这个组中含有多个事件循环线程，每一个事件循环线程是NioEventLoop</li>
+<li>每个NioEventLoop都有一个selector，用于监听注册在其上的socketChannel的网络通讯</li>
+<li>每个Boss NioEventLoop线程内部循环执行的步骤<ul>
+<li>处理accept事件，与client建立连接，生成NioSocketChannel</li>
+<li>将NioSocketChannel注册到某个worker NioEventLoop上的selector</li>
+<li>处理任务队列的任务，即runAllTask</li>
+</ul>
+</li>
+<li>每个worker NioEventLoop处理NioSocketChannel业务时，会使用pipeline(管道)，管道中维护了很多handler处理器用来处理channel中的数据</li>
+</ol>
+<h3 id="Netty模块组件"><a href="#Netty模块组件" class="headerlink" title="Netty模块组件"></a>Netty模块组件</h3><h4 id="【Bootstrap、ServerBootStrap】："><a href="#【Bootstrap、ServerBootStrap】：" class="headerlink" title="【Bootstrap、ServerBootStrap】："></a>【Bootstrap、ServerBootStrap】：</h4><p>Bootstrap意思是引导，一个Netty应用通用由一个Bootstrap开始，主要作用是配置整个Netty程序，串联各个组件，Netty中Bootstrap类是客户端程序的启动引导类，ServerBootStrap是服务端的启动引导类</p>
+<h4 id="【Future、ChannelFuture】："><a href="#【Future、ChannelFuture】：" class="headerlink" title="【Future、ChannelFuture】："></a>【Future、ChannelFuture】：</h4><p>正如前面介绍,在Netty中所有的IO操作都是异步的，不能立刻得知消息是否被正确处理。</p>
+<p>但是可以过一会等他执行完成或者直接注册一个监听，具体的实现就是通过Future和ChannelFuture，他们可以注册一个监听，当操作执行完成或失败时监听会自动触发注册的监听事件。</p>
+<h4 id="【Channel】："><a href="#【Channel】：" class="headerlink" title="【Channel】："></a>【Channel】：</h4><p>Netty网络通信的组件，能够用于执行网络的I/O操作。Channel为用户提供：</p>
+<ol>
+<li><p>当前网络连接的通道的状态（例如是否打开？是否已连接）</p>
+</li>
+<li><p>网络连接的参数配置（例如接收缓冲区的大小）</p>
+</li>
+<li><p>提供异步的网络I/O操作（如建立连接，读写，绑定端口），异步调用意味着任何I/O调用都将立即返回，并且不保证在调用结束时所请求的I/O操作已完成。</p>
+</li>
+<li><p>调用立即返回一个ChannelFuture实例，通过注册监听器到ChannelFuture上，可以在I/O操作成功、失败或者取消时回调通知调用方。</p>
+</li>
+<li><p>支持关联I/O操作与对应的处理程序</p>
+<p>不同协议、不同的阻塞类型的连接都有不同的Chennle类型与之对应。</p>
+<p>下面是一些常用的Channel类型：</p>
+<blockquote>
+<p>NioSocketChannel，异步的客户端 TCP Socket 连接。</p>
+<p>NioServerSocketChannel，异步的服务器端 TCP Socket 连接。</p>
+<p>NioDatagramChannel，异步的 UDP 连接。</p>
+<p>NioSctpChannel，异步的客户端 Sctp 连接。</p>
+<p>NioSctpServerChannel，异步的 Sctp 服务器端连接。这些通道涵盖了 UDP 和 TCP 网络 IO 以及文件 IO。</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="【Selector】"><a href="#【Selector】" class="headerlink" title="【Selector】:"></a>【Selector】:</h4><p>Netty基于Selector对象实现I/O多路复用，通过Selector一个线程可以监听多个连接的Channel事件。当向一个Selector中注册Channel后，Selector内部的机制就可以自动不断地查询(Select)这些注册的Channel是否有已就绪的I/O事件（例如可读，可写，网络连接完成等），这样程序就可以很简单的使用一个线程高效的管理多个Channel</p>
+<h4 id="【NioEventLoop】："><a href="#【NioEventLoop】：" class="headerlink" title="【NioEventLoop】："></a>【NioEventLoop】：</h4><p>NioEventLoop中维护了一个线程和任务队列，支持异步提交执行任务，线程启动时会调用NioEventLoop的run方法，执行I/O任务和非I/O任务：</p>
+<ul>
+<li>I/O任务，即selectionKey中ready的事件，如accept、connect、read、write等，由processsSelectedKeys方法触发。</li>
+<li>非I/O任务，添加到taskQueue中的任务，如register(),bind()等任务，有runAllTasks方法触发</li>
+</ul>
+<h4 id="【NioEventLoopGroup】："><a href="#【NioEventLoopGroup】：" class="headerlink" title="【NioEventLoopGroup】："></a>【NioEventLoopGroup】：</h4><p>NioEventLoopGroup，主要管理eventLoop的生命周期，可以理解为一个线程池，内部维护了一组线程，每个线程（NioEventLoop）负责处理多个Channel上的事件，而一个Channel只对应于一个线程。</p>
+<h4 id="【ChannelHandler】："><a href="#【ChannelHandler】：" class="headerlink" title="【ChannelHandler】："></a>【ChannelHandler】：</h4><p>ChannelHandler是一个接口，处理I/O事件或拦截I/O操作，并将其转发到其ChannelPipeline(业务处理链)中的下一个处理程序。</p>
+<p>ChanneHandler本身并没有提供很多方法，因为这个接口有许多的方法需要实现，方便使用期间，可以继承他的子类：</p>
+<blockquote>
+<p>ChannelInboundHandler 用于处理入站 I/O 事件。</p>
+<p>ChannelOutboundHandler 用于处理出站 I/O 操作。</p>
+</blockquote>
+<p>或者使用一下适配器类：</p>
+<blockquote>
+<p>ChannelInboundHandlerAdapter 用于处理入站 I/O 事件。</p>
+<p>ChannelOutboundHandlerAdapter 用于处理出站 I/O 操作。</p>
+</blockquote>
+<h4 id="【ChannelHandlerContext】："><a href="#【ChannelHandlerContext】：" class="headerlink" title="【ChannelHandlerContext】："></a>【ChannelHandlerContext】：</h4><p>保存Channel相关的所有上下文信息，同时关联一个ChannelHandler对象。</p>
+<h4 id="【ChannelPipeline】："><a href="#【ChannelPipeline】：" class="headerlink" title="【ChannelPipeline】："></a>【ChannelPipeline】：</h4><p>保存ChannelHandler的List，用于处理或拦截Channel的入站事件和出站操作</p>
+<p>ChannelPipeline实现了一种高级形式的拦截过滤器模式，是用户可以完全控制事件的处理方式，以及Channel中各个ChannelHandler如何相互相互。</p>
+<p>在Netty中每个Channel都有且仅有一个ChannelPipeline与之对应，他们的组成关系：</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/channel_pipeline.png" alt="channel_pipeline"></p>
+<p>一个Channel包含了一个ChannelPipeline，而ChannelPipeline中又维护一个由ChaennlHandlerContext组成的双向链表，并且每个ChannelHandlerContext中有关联着一个ChannelHandler。</p>
+<p>read事件(入站事件)和write事件(出站事件)在一个双向链表中，入站事件会从链表head往后传递到最后一个入站的handler，出站事件会从链表tail往前传递到最前一个出战的handler，两种类型的handler互不干扰</p>
+<h3 id="ByteBuf详解"><a href="#ByteBuf详解" class="headerlink" title="ByteBuf详解"></a>ByteBuf详解</h3><p>从结构上来说，ByteBuf有一串字节数组构成。数组中每个字节用来存放信息。</p>
+<p>ByteBuf提供了两个索引，一个用于读取数据，一个用于写入数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置</p>
+<p>当从ByteBuf读取时，它的readIndex(读索引)将会根据读取的字节递增。</p>
+<p>同样当写ByteBuf时，他的writeIndex也会根据写入的字节数进行递增。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/byte-buf.png" alt="ByteBuf"></p>
+<p>需要注意的是极限的情况是 readerIndex 刚好读到了 writerIndex 写入的地方。<br>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
+<blockquote>
+<p>已经读取的区域：[0,readerindex)</p>
+<p>可读取的区域：[readerindex,writerIndex)</p>
+<p> 可写的区域: [writerIndex,capacity)</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
+        <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Netty核心源码解析</title>
     <url>/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
     <content><![CDATA[<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
@@ -301,6 +301,179 @@
 
 <h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
 <p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
+]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
+        <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring中Bean的生命周期</title>
+    <url>/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
+    <content><![CDATA[<p>Spring最重要的功能就是帮助程序员创建对象（也就是IOC），而启动Spring就是为创建Bean对象做准备，所以我们先明白Spring到底是则呢怎么去创建Bean的，也就是先弄明白Bean的生命周期。</p>
+<p>Bean的生命周期就是指：<strong>在Spring中，一个Bean是如何生成的，如何销毁的？</strong></p>
+<a id="more"></a>
+
+<p><img src="/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/Bean%E7%9A%84%E7%94%9F%E6%88%90%E8%BF%87%E7%A8%8B.jpg" alt="Bean的生命周期"></p>
+<h2 id="Bean的生成过程"><a href="#Bean的生成过程" class="headerlink" title="Bean的生成过程"></a>Bean的生成过程</h2><h3 id="1-生成BeanDefinition"><a href="#1-生成BeanDefinition" class="headerlink" title="1.生成BeanDefinition"></a>1.生成BeanDefinition</h3><p>Spring启动的时候会进行扫描，会先调用</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br></pre></td></tr></table></figure>
+<p>拿到所指定的包路径下的所有文件资源（******.class文件）</p>
+<p>然后会遍历每个Resource，为每个Resource生成一个MetadataReader对象，这个对象拥有三个功能：</p>
+<ol>
+<li>获取对应的Resource资源</li>
+<li>获取Resource对应的class元数据信息，包括类的名字，是不是接口、是不是一个注解、是不是抽象类、有没有父类，父类的名字，所实现的所有接口的名字，内部类的类名等等</li>
+<li>获取Resource对应的class上的注解信息，当前类上有哪些注解，当前类中有哪些方法上有注解</li>
+</ol>
+<p>在生成MetadataReader对象时，会利用<strong>ASM</strong>技术解析class文件，得到类的元数据集信息合注解信息，在这个过程中也会利用ClassLoader去加载注解类（<strong>ClassUtils.getDefaultClassLoader()所获得的类加载器</strong>），但是不会加载本类。</p>
+<p>有了MetadataReader对象，就相当于有了当前类的所有信息，但是当前类并没有加载，也是可以理解的，真正在用到这个类的时候才加载。</p>
+<p>然后利用MetadataReader对象生成一个ScannedGenericBeanDefinition对象，<strong>注意此时的BeanDefinition对象中的beanClass属性存储的是当前类的名字，而不是class对象</strong>。（beanClass属性的类型是Object，它即可以存储类的名字，也可以存储class对象）</p>
+<h3 id="2-合并BeanDefinition"><a href="#2-合并BeanDefinition" class="headerlink" title="2.合并BeanDefinition"></a>2.合并BeanDefinition</h3><p>如果某个BeanDefinition存在父BeanDefinition，那么则要进行合并，递归到往上找到父类，用父类的BeanDefinition新建一个RootBeanDefinition，再用子类的属性覆盖父类的属性。（ 在这个过程中，父类和子类存放在beanDefinitionMap当中的BeanDefinition其实是没有改变的，而是新生成了一个RootBeanDefinition存放在了mergedBeanDefinitions这个map里）</p>
+<h3 id="3-加载类"><a href="#3-加载类" class="headerlink" title="3. 加载类"></a>3. 加载类</h3><p>有了BeanDefinition之后，后续就会基于BeanDefinition去创建Bean，而创建Bean就必须实例化对象，而实例化就必须先加载当前BeanDefinition所对应的class，在AbstractAutowireCapableBeanFactory类的createBean()方法中，一开始就会调用：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Class&lt;?&gt; resolvedClass = resolveBeanClass(mbd, beanName);</span><br></pre></td></tr></table></figure>
+
+
+<p>这行代码就是去加载类，该方法是这么实现的：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (mbd.hasBeanClass()) &#123;</span><br><span class="line">    <span class="keyword">return</span> mbd.getBeanClass();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> AccessController.doPrivileged((PrivilegedExceptionAction&lt;Class&lt;?&gt;&gt;) () -&gt;</span><br><span class="line">        doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> doResolveBeanClass(mbd, typesToMatch);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public boolean hasBeanClass() &#123;</span><br><span class="line">    return (this.beanClass instanceof Class);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果beanClass属性的类型是Class，那么就直接返回，如果不是，则会根据类名进行加载（doResolveBeanClass方法所做的事情）</p>
+<p>会利用BeanFactory所设置的类加载器来加载类，如果没有设置，则默认使用**ClassUtils.getDefaultClassLoader()**所返回的类加载器来加载。</p>
+<h4 id="ClassUtils-getDefaultClassLoader"><a href="#ClassUtils-getDefaultClassLoader" class="headerlink" title="ClassUtils.getDefaultClassLoader()"></a><strong>ClassUtils.getDefaultClassLoader()</strong></h4><ol>
+<li>优先获取当前线程中的ClassLoader</li>
+<li>如果为空，则获取加载ClassUtils类的类加载器（正常情况下，就是AppClassLoader，但是如果是在Tomcat中运行，那么则会是Tomcat中为每个应用所创建的WebappClassLoader）</li>
+<li>如果为空，那么则是bootstrap类加载器加载的ClassUtils类，那则获取系统类加载器进行加载</li>
+</ol>
+<h3 id="4-实例化前"><a href="#4-实例化前" class="headerlink" title="4. 实例化前"></a>4. 实例化前</h3><p>允许第三方可以不按照Spring的正常流程来创建一个Bean。</p>
+<p>可以利用InstantiationAwareBeanPostProcessor的postProcessBeforeInstantiation方法来提前返回一个Bean对象，得到对象后会直接</p>
+<p>跳到进行<strong>Bean初始化</strong>的方法，然后直接结束Bean的生命周期</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">applyBeanPostProcessorsBeforeInstantiation</span><span class="params">(Class&lt;?&gt; beanClass, String beanName)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">      <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">         InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">         Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);</span><br><span class="line">         <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="5-推断构造方法"><a href="#5-推断构造方法" class="headerlink" title="5. 推断构造方法"></a>5. 推断构造方法</h3><p>选择一个合适的构造器用来创建实例对象</p>
+<h3 id="6-实例化"><a href="#6-实例化" class="headerlink" title="6. 实例化"></a>6. 实例化</h3><p>构造方法反射得到一个实例</p>
+<h3 id="7-BeanDefinition的后置处理"><a href="#7-BeanDefinition的后置处理" class="headerlink" title="7. BeanDefinition的后置处理"></a>7. BeanDefinition的后置处理</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">        MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;</span><br><span class="line">        bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里可以处理BeanDefinition，但是此时实例对象已经生成好了，所以修改beanClass已经没用了，但是可以修改PropertyValues，比如：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LubanMergedBeanDefinitionPostProcessor</span> <span class="keyword">implements</span> <span class="title">MergedBeanDefinitionPostProcessor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessMergedBeanDefinition</span><span class="params">(RootBeanDefinition beanDefinition, Class&lt;?&gt; beanType, String beanName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (beanName.equals(<span class="string">&quot;userService&quot;</span>)) &#123;</span><br><span class="line">            <span class="comment">//实例对象已经生成，此时变更没有意义</span></span><br><span class="line">            beanDefinition.setBeanClass(User.class); </span><br><span class="line">            beanDefinition.getPropertyValues().add(<span class="string">&quot;name&quot;</span>,<span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="8-实例化后（填充属性前）"><a href="#8-实例化后（填充属性前）" class="headerlink" title="8. 实例化后（填充属性前）"></a>8. 实例化后（填充属性前）</h3><p>可以自己写一个InstantiationAwareBeanPostProcessor，然后重写postProcessAfterInstantiation方法返回false,那么则不会进行属性填充</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">      <span class="keyword">if</span> (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) &#123;</span><br><span class="line">         <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="9-填充属性"><a href="#9-填充属性" class="headerlink" title="9. 填充属性"></a>9. 填充属性</h3><p>使用Spring自带的Autowired，默认是关闭的(AUTOWIRE_NO)</p>
+<p>其实就是Spring自动的根据某个类中的set方法来找bean</p>
+<ul>
+<li>byName就是根据某个set方法所对应的属性名去找bean</li>
+<li>byType，就是根据某个set方法的参数类型去找bean</li>
+</ul>
+<h3 id="10-填充属性后"><a href="#10-填充属性后" class="headerlink" title="10. 填充属性后"></a>10. 填充属性后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 调用BeanPostProcessor分别解析@Autowired、@Resource、@Value，得到属性值</span></span><br><span class="line">      PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">         <span class="keyword">if</span> (filteredPds == <span class="keyword">null</span>) &#123;</span><br><span class="line">            filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);</span><br><span class="line">         &#125;</span><br><span class="line">         pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);</span><br><span class="line">         <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      pvs = pvsToUse;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>@Autowired注解的 AutowiredAnnotationBeanPostProcessor</p>
+<p>@Resource注解的 CommonAnnotationBeanPostProcessor</p>
+</blockquote>
+<h3 id="11-执行Aware"><a href="#11-执行Aware" class="headerlink" title="11. 执行Aware"></a>11. 执行Aware</h3><ol>
+<li>((BeanNameAware) bean).setBeanName(beanName);</li>
+<li>((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);</li>
+<li>((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.<strong>this</strong>);</li>
+</ol>
+<h3 id="12-初始化前"><a href="#12-初始化前" class="headerlink" title="12. 初始化前"></a>12. 初始化前</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessBeforeInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="13-初始化"><a href="#13-初始化" class="headerlink" title="13. 初始化"></a>13. 初始化</h3><ol>
+<li>((InitializingBean) bean).afterPropertiesSet();</li>
+<li>执行BeanDefinition中指定的初始化方法</li>
+</ol>
+<h3 id="14-初始化后"><a href="#14-初始化后" class="headerlink" title="14. 初始化后"></a>14. 初始化后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessAfterInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="Bean的销毁过程"><a href="#Bean的销毁过程" class="headerlink" title="Bean的销毁过程"></a>Bean的销毁过程</h2><h3 id="1-容器关闭"><a href="#1-容器关闭" class="headerlink" title="1. 容器关闭"></a>1. 容器关闭</h3><h3 id="2-发布ContextClosedEvent事件"><a href="#2-发布ContextClosedEvent事件" class="headerlink" title="2. 发布ContextClosedEvent事件"></a>2. 发布ContextClosedEvent事件</h3><h3 id="3-调用LifecycleProcessor的onClose方法"><a href="#3-调用LifecycleProcessor的onClose方法" class="headerlink" title="3. 调用LifecycleProcessor的onClose方法"></a>3. 调用LifecycleProcessor的onClose方法</h3><h3 id="4-销毁单例Bean"><a href="#4-销毁单例Bean" class="headerlink" title="4. 销毁单例Bean"></a>4. 销毁单例Bean</h3><ol>
+<li>找出所有DisposableBean(实现了DisposableBean接口的Bean)</li>
+<li>遍历每个DisposableBean</li>
+<li>找出依赖了当前DisposableBean的其他Bean，将这些Bean从单例池中移除掉</li>
+<li>调用DisposableBean的destroy()方法</li>
+<li>找到当前DisposableBean所包含的inner beans，将这些Bean从单例池中移除掉 </li>
+</ol>
+<p>这里涉及到一个设计模式：<strong>适配器模式</strong></p>
+<p>在销毁时，Spring会找出实现了DisposableBean接口的Bean。</p>
+<p>但是我们在定义一个Bean时，如果这个Bean实现了DisposableBean接口，或者实现了AutoCloseable接口，或者在BeanDefinition中指定了destroyMethodName，那么这个Bean都属于“DisposableBean”，这些Bean在容器关闭时都要调用相应的销毁方法。</p>
+<p>所以，这里就需要进行适配，将实现了DisposableBean接口、或者AutoCloseable接口等适配成实现了DisposableBean接口，所以就用到了DisposableBeanAdapter，会把实现了AutoCloseable接口的类封装成DisposableBeanAdapter，而DisposableBeanAdapter实现了DisposableBean接口。</p>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Netty编解码&amp;粘包拆包&amp;心跳机制&amp;断线自动重连</title>
+    <url>/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/</url>
+    <content><![CDATA[<h3 id="Netty编解码"><a href="#Netty编解码" class="headerlink" title="Netty编解码"></a>Netty编解码</h3><p>Netty涉及到编解码的组件有Channel、ChannelHandler、ChannelPipe等</p>
+<a id="more"></a>
+
+<p><strong>ChannelHandler</strong></p>
+<p>ChannelHandler充当了处理入站和出站数据的应用程序逻辑容器。例如，实现ChannelInboundHandler接口(或ChannelInboundHandlerAdapter)，你就可以接收入站事件和数据，这些数据随后会被你的应用程序的业务逻辑处理。当你要给连接的客户端发送响应时，也可以从ChannelInboundHandler冲刷数据。你的业务逻辑通常写在一个或者多个ChannelInboundHandler中。ChannelOutboundHandler原理一样，只不过它是用来处理出站数据的。</p>
+<p><strong>ChannelPipeline</strong></p>
+<p>ChannelPipeline提供了ChannelHandler链的容器。以客户端应用程序为例，如果事件的运动方向是从客户端到服务端的，那么我们称这些事件为出站的，即客户端发送给服务端的数据会通过pipeline中的一系列ChannelOutboundHandler(ChannelOutboundHandler调用是从tail到head方向逐个调用每个handler的逻辑)，并被这些Handler处理，反之则称为入站的，入站只调用pipeline里的ChannelInboundHandler逻辑(ChannelInboundHandler调用是从head到tail方向逐个调用每个handler的逻辑)。</p>
+<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-pipeline.png" alt="channel_pipeline"></p>
+<h4 id="编码解码器"><a href="#编码解码器" class="headerlink" title="编码解码器"></a>编码解码器</h4><p>当你通过Netty发送或者接受一个消息的时候，就将会发生一次数据转换。入站消息会被解码：从字节转换为另一种格式（比如java对象）；如果是出站消息，它会被编码成字节。<br>Netty提供了一系列实用的编码解码器，他们都实现了ChannelInboundHadnler或者ChannelOutboundHandler接口。在这些类中，channelRead方法已经被重写了。以入站为例，对于每个从入站Channel读取的消息，这个方法会被调用。随后，它将调用由已知解码器所提供的decode()方法进行解码，并将已经解码的字节转发给ChannelPipeline中的下一个ChannelInboundHandler。<br>Netty提供了很多编解码器，比如编解码字符串的StringEncoder和StringDecoder，编解码对象的ObjectEncoder和ObjectDecoder等。<br>如果要实现高效的编解码可以用protobuf，但是protobuf需要维护大量的proto文件比较麻烦，现在一般可以使用protostuff。<br>protostuff是一个基于protobuf实现的序列化方法，它较于protobuf最明显的好处是，在几乎不损耗性能的情况下做到了不用我们写.proto文件来实现序列化。使用它也非常简单</p>
+<p>引入依赖：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span>   </span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.dyuproject.protostuff<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>protostuff-api<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.10<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.dyuproject.protostuff<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>protostuff-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.10<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.dyuproject.protostuff<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>protostuff-runtime<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.10<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="Netty粘包拆包"><a href="#Netty粘包拆包" class="headerlink" title="Netty粘包拆包"></a>Netty粘包拆包</h3><p>TCP是一个流协议，就是没有界限的一长串二进制数据。TCP作为传输层协议并不不了解上层业务数据的具体含义，它会根据TCP缓冲区的实际情况进行数据包的划分，所以在业务上认为是一个完整的包，可能会被TCP拆分成多个包进行发送，也有可能把多个小的包封装成一个大的数据包发送，这就是所谓的TCP粘包和拆包问题。面向流的通信是无消息保护边界的。<br>如下图所示，client发了两个数据包D1和D2，但是server端可能会收到如下几种情况的数据。</p>
+<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/tcp.png" alt="tcp"></p>
+<p><strong>解决方案</strong></p>
+<ol>
+<li><p>消息定长度，传输的数据大小固定长度，例如每段的长度固定为100字节，如果不够空位补空格</p>
+</li>
+<li><p>在数据包尾部添加特殊分隔符，比如下划线，中划线等，这种方法简单易行，但选择分隔符的时候一定要注意每条数据的内部一定不能出现分隔符</p>
+</li>
+<li><p>发送长度：在发送每条数据的时候，将数据的长度一并发送，比如可以选择每天数据的前4位是数据的长度，应用层处理是可以根据长度来判断每条数据的开始和结束</p>
+<p>Netty提供了多个解码器，可以进行分包操作，如：</p>
+<ul>
+<li>LineBasedFrameDecoder （回车换行分包）</li>
+<li>DelimiterBasedFrameDecoder（特殊分隔符分包）</li>
+<li>FixedLengthFrameDecoder（固定长度报文来分包）</li>
+</ul>
+</li>
+</ol>
+<h3 id="Netty心跳检测机制"><a href="#Netty心跳检测机制" class="headerlink" title="Netty心跳检测机制"></a>Netty心跳检测机制</h3><p>所谓心跳, 即在 TCP 长连接中, 客户端和服务器之间定期发送的一种特殊的数据包, 通知对方自己还在线, 以确保 TCP 连接的有效性.<br>在 Netty 中, 实现心跳机制的关键是 IdleStateHandler, 看下它的构造器：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">IdleStateHandler</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> readerIdleTimeSeconds,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> writerIdleTimeSeconds,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> allIdleTimeSeconds)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>(readerIdleTimeSeconds, writerIdleTimeSeconds, allIdleTimeSeconds,</span><br><span class="line">         TimeUnit.SECONDS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>参数含义：</p>
+<ul>
+<li><p>readerIdleTimeSeconds：读超时，即当在指定的时间间隔内没有从 Channel 读取到数据时, 会触发一个 READER_IDLE 的 IdleStateEvent 事件.</p>
+</li>
+<li><p>writerIdleTimeSeconds: 写超时. 即当在指定的时间间隔内没有数据写入到 Channel 时, 会触发一个 WRITER_IDLE 的 IdleStateEvent 事件.</p>
+</li>
+<li><p>allIdleTimeSeconds: 读/写超时. 即当在指定的时间间隔内没有读或写操作时, 会触发一个 ALL_IDLE 的 IdleStateEvent 事件.</p>
+<p>注：这三个参数默认的时间单位是秒。若需要指定其他时间单位，可以使用另一个构造方法：<br>IdleStateHandler(boolean observeOutput, long readerIdleTime, long writerIdleTime, long allIdleTime, TimeUnit unit)</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">IdleStateHandler</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">long</span> readerIdleTime, <span class="keyword">long</span> writerIdleTime, <span class="keyword">long</span> allIdleTime,</span></span></span><br><span class="line"><span class="function"><span class="params">        TimeUnit unit)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>(<span class="keyword">false</span>, readerIdleTime, writerIdleTime, allIdleTime, unit);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>要实现Netty服务端心跳检测机制需要在服务器端的ChannelInitializer中加入如下的代码：</p>
+</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">pipeline.addLast(<span class="keyword">new</span> IdleStateHandler(<span class="number">3</span>,<span class="number">0</span>,<span class="number">0</span>));</span><br></pre></td></tr></table></figure>
+<p>初步地看下IdleStateHandler源码，先看下IdleStateHandler中的channelRead方法：</p>
+<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-read.png" alt="channelRead"></p>
+<p>该方法只是进行了透传，不做任何业务逻辑处理，让channelPipe中的下一个handler处理channelRead方法</p>
+<p>再看一下channelActive方法：</p>
+<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-read-complete.png" alt="channelReadComplete"></p>
+<p>该方法将上次读取时间设置成了当前时间</p>
+<p>再看看channelActive方法：</p>
+<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-active.png" alt="channelActive"></p>
+<p>这里有个initialize的方法，这是IdleStateHandler的精髓，接着探究：</p>
+<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/initialize.png" alt="initialize"></p>
+<p>这边会触发一个Task，ReaderIdleTimeoutTask，这个task里的run方法源码是这样的：</p>
+<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/read-timeout-task.png" alt="readTimeoutTask"></p>
+<p>第一个红框的代码表示：nextDelay = 当前时间-上次读取时间(channelReadComplete设置)-读超时时间，表示现在距离读超时还剩多长的时间。</p>
+<ul>
+<li><p>如果这个值大于0，会触发第四个红框，触发一个新的Task，时间是剩余的超时时长（下次再继续检查）。</p>
+</li>
+<li><p>如果这个值小于0，会重新触发一个设置超时时长的Task，然后会触发下一个handler的userEventTriggered方法：</p>
+<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-idle.png" alt="channelIdle"></p>
+</li>
+</ul>
+<h3 id="Netty断线自动重连实现"><a href="#Netty断线自动重连实现" class="headerlink" title="Netty断线自动重连实现"></a>Netty断线自动重连实现</h3><ol>
+<li>客户端启动连接服务端时，如果网络或服务端有问题，客户端连接失败，可以重连，重连的逻辑加在客户端。</li>
+</ol>
+<ol start="2">
+<li>系统运行过程中网络故障或服务端故障，导致客户端与服务端断开连接了也需要重连，可以在客户端处理数据的Handler的channelInactive方法中进行重连。</li>
+</ol>
 ]]></content>
       <categories>
         <category>分布式框架</category>
@@ -427,179 +600,6 @@
 <p>如果@Resource注解中指定了name属性，那么则只会根据name属性的值去找bean，如果找不到则报错</p>
 <p>如果@Resource注解没有指定name属性，那么会先判断当前注入点名字（属性名字或普通方法名字或者set方法后缀）是不是存在Bean，如果存在，则直接根据注入点名字取获取bean，如果不存在，则会走@Autowired注解的逻辑，会根据注入点类型去找Bean</p>
 <h4 id="核心流程-1"><a href="#核心流程-1" class="headerlink" title="核心流程"></a>核心流程</h4><p><img src="/2021/06/09/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B/Resource%E6%89%A7%E8%A1%8C%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B.jpg" alt="Resource执行注入流程"></p>
-]]></content>
-      <categories>
-        <category>框架源码</category>
-      </categories>
-      <tags>
-        <tag>spring</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Netty编解码&amp;粘包拆包&amp;心跳机制&amp;断线自动重连</title>
-    <url>/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/</url>
-    <content><![CDATA[<h3 id="Netty编解码"><a href="#Netty编解码" class="headerlink" title="Netty编解码"></a>Netty编解码</h3><p>Netty涉及到编解码的组件有Channel、ChannelHandler、ChannelPipe等</p>
-<a id="more"></a>
-
-<p><strong>ChannelHandler</strong></p>
-<p>ChannelHandler充当了处理入站和出站数据的应用程序逻辑容器。例如，实现ChannelInboundHandler接口(或ChannelInboundHandlerAdapter)，你就可以接收入站事件和数据，这些数据随后会被你的应用程序的业务逻辑处理。当你要给连接的客户端发送响应时，也可以从ChannelInboundHandler冲刷数据。你的业务逻辑通常写在一个或者多个ChannelInboundHandler中。ChannelOutboundHandler原理一样，只不过它是用来处理出站数据的。</p>
-<p><strong>ChannelPipeline</strong></p>
-<p>ChannelPipeline提供了ChannelHandler链的容器。以客户端应用程序为例，如果事件的运动方向是从客户端到服务端的，那么我们称这些事件为出站的，即客户端发送给服务端的数据会通过pipeline中的一系列ChannelOutboundHandler(ChannelOutboundHandler调用是从tail到head方向逐个调用每个handler的逻辑)，并被这些Handler处理，反之则称为入站的，入站只调用pipeline里的ChannelInboundHandler逻辑(ChannelInboundHandler调用是从head到tail方向逐个调用每个handler的逻辑)。</p>
-<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-pipeline.png" alt="channel_pipeline"></p>
-<h4 id="编码解码器"><a href="#编码解码器" class="headerlink" title="编码解码器"></a>编码解码器</h4><p>当你通过Netty发送或者接受一个消息的时候，就将会发生一次数据转换。入站消息会被解码：从字节转换为另一种格式（比如java对象）；如果是出站消息，它会被编码成字节。<br>Netty提供了一系列实用的编码解码器，他们都实现了ChannelInboundHadnler或者ChannelOutboundHandler接口。在这些类中，channelRead方法已经被重写了。以入站为例，对于每个从入站Channel读取的消息，这个方法会被调用。随后，它将调用由已知解码器所提供的decode()方法进行解码，并将已经解码的字节转发给ChannelPipeline中的下一个ChannelInboundHandler。<br>Netty提供了很多编解码器，比如编解码字符串的StringEncoder和StringDecoder，编解码对象的ObjectEncoder和ObjectDecoder等。<br>如果要实现高效的编解码可以用protobuf，但是protobuf需要维护大量的proto文件比较麻烦，现在一般可以使用protostuff。<br>protostuff是一个基于protobuf实现的序列化方法，它较于protobuf最明显的好处是，在几乎不损耗性能的情况下做到了不用我们写.proto文件来实现序列化。使用它也非常简单</p>
-<p>引入依赖：</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span>   </span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.dyuproject.protostuff<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>protostuff-api<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.10<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.dyuproject.protostuff<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>protostuff-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.10<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.dyuproject.protostuff<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>protostuff-runtime<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span>    </span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.10<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h3 id="Netty粘包拆包"><a href="#Netty粘包拆包" class="headerlink" title="Netty粘包拆包"></a>Netty粘包拆包</h3><p>TCP是一个流协议，就是没有界限的一长串二进制数据。TCP作为传输层协议并不不了解上层业务数据的具体含义，它会根据TCP缓冲区的实际情况进行数据包的划分，所以在业务上认为是一个完整的包，可能会被TCP拆分成多个包进行发送，也有可能把多个小的包封装成一个大的数据包发送，这就是所谓的TCP粘包和拆包问题。面向流的通信是无消息保护边界的。<br>如下图所示，client发了两个数据包D1和D2，但是server端可能会收到如下几种情况的数据。</p>
-<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/tcp.png" alt="tcp"></p>
-<p><strong>解决方案</strong></p>
-<ol>
-<li><p>消息定长度，传输的数据大小固定长度，例如每段的长度固定为100字节，如果不够空位补空格</p>
-</li>
-<li><p>在数据包尾部添加特殊分隔符，比如下划线，中划线等，这种方法简单易行，但选择分隔符的时候一定要注意每条数据的内部一定不能出现分隔符</p>
-</li>
-<li><p>发送长度：在发送每条数据的时候，将数据的长度一并发送，比如可以选择每天数据的前4位是数据的长度，应用层处理是可以根据长度来判断每条数据的开始和结束</p>
-<p>Netty提供了多个解码器，可以进行分包操作，如：</p>
-<ul>
-<li>LineBasedFrameDecoder （回车换行分包）</li>
-<li>DelimiterBasedFrameDecoder（特殊分隔符分包）</li>
-<li>FixedLengthFrameDecoder（固定长度报文来分包）</li>
-</ul>
-</li>
-</ol>
-<h3 id="Netty心跳检测机制"><a href="#Netty心跳检测机制" class="headerlink" title="Netty心跳检测机制"></a>Netty心跳检测机制</h3><p>所谓心跳, 即在 TCP 长连接中, 客户端和服务器之间定期发送的一种特殊的数据包, 通知对方自己还在线, 以确保 TCP 连接的有效性.<br>在 Netty 中, 实现心跳机制的关键是 IdleStateHandler, 看下它的构造器：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">IdleStateHandler</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> readerIdleTimeSeconds,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> writerIdleTimeSeconds,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> allIdleTimeSeconds)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>(readerIdleTimeSeconds, writerIdleTimeSeconds, allIdleTimeSeconds,</span><br><span class="line">         TimeUnit.SECONDS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>参数含义：</p>
-<ul>
-<li><p>readerIdleTimeSeconds：读超时，即当在指定的时间间隔内没有从 Channel 读取到数据时, 会触发一个 READER_IDLE 的 IdleStateEvent 事件.</p>
-</li>
-<li><p>writerIdleTimeSeconds: 写超时. 即当在指定的时间间隔内没有数据写入到 Channel 时, 会触发一个 WRITER_IDLE 的 IdleStateEvent 事件.</p>
-</li>
-<li><p>allIdleTimeSeconds: 读/写超时. 即当在指定的时间间隔内没有读或写操作时, 会触发一个 ALL_IDLE 的 IdleStateEvent 事件.</p>
-<p>注：这三个参数默认的时间单位是秒。若需要指定其他时间单位，可以使用另一个构造方法：<br>IdleStateHandler(boolean observeOutput, long readerIdleTime, long writerIdleTime, long allIdleTime, TimeUnit unit)</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">IdleStateHandler</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">long</span> readerIdleTime, <span class="keyword">long</span> writerIdleTime, <span class="keyword">long</span> allIdleTime,</span></span></span><br><span class="line"><span class="function"><span class="params">        TimeUnit unit)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>(<span class="keyword">false</span>, readerIdleTime, writerIdleTime, allIdleTime, unit);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>要实现Netty服务端心跳检测机制需要在服务器端的ChannelInitializer中加入如下的代码：</p>
-</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">pipeline.addLast(<span class="keyword">new</span> IdleStateHandler(<span class="number">3</span>,<span class="number">0</span>,<span class="number">0</span>));</span><br></pre></td></tr></table></figure>
-<p>初步地看下IdleStateHandler源码，先看下IdleStateHandler中的channelRead方法：</p>
-<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-read.png" alt="channelRead"></p>
-<p>该方法只是进行了透传，不做任何业务逻辑处理，让channelPipe中的下一个handler处理channelRead方法</p>
-<p>再看一下channelActive方法：</p>
-<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-read-complete.png" alt="channelReadComplete"></p>
-<p>该方法将上次读取时间设置成了当前时间</p>
-<p>再看看channelActive方法：</p>
-<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-active.png" alt="channelActive"></p>
-<p>这里有个initialize的方法，这是IdleStateHandler的精髓，接着探究：</p>
-<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/initialize.png" alt="initialize"></p>
-<p>这边会触发一个Task，ReaderIdleTimeoutTask，这个task里的run方法源码是这样的：</p>
-<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/read-timeout-task.png" alt="readTimeoutTask"></p>
-<p>第一个红框的代码表示：nextDelay = 当前时间-上次读取时间(channelReadComplete设置)-读超时时间，表示现在距离读超时还剩多长的时间。</p>
-<ul>
-<li><p>如果这个值大于0，会触发第四个红框，触发一个新的Task，时间是剩余的超时时长（下次再继续检查）。</p>
-</li>
-<li><p>如果这个值小于0，会重新触发一个设置超时时长的Task，然后会触发下一个handler的userEventTriggered方法：</p>
-<p><img src="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/channel-idle.png" alt="channelIdle"></p>
-</li>
-</ul>
-<h3 id="Netty断线自动重连实现"><a href="#Netty断线自动重连实现" class="headerlink" title="Netty断线自动重连实现"></a>Netty断线自动重连实现</h3><ol>
-<li>客户端启动连接服务端时，如果网络或服务端有问题，客户端连接失败，可以重连，重连的逻辑加在客户端。</li>
-</ol>
-<ol start="2">
-<li>系统运行过程中网络故障或服务端故障，导致客户端与服务端断开连接了也需要重连，可以在客户端处理数据的Handler的channelInactive方法中进行重连。</li>
-</ol>
-]]></content>
-      <categories>
-        <category>分布式框架</category>
-      </categories>
-      <tags>
-        <tag>netty</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Spring中Bean的生命周期</title>
-    <url>/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
-    <content><![CDATA[<p>Spring最重要的功能就是帮助程序员创建对象（也就是IOC），而启动Spring就是为创建Bean对象做准备，所以我们先明白Spring到底是则呢怎么去创建Bean的，也就是先弄明白Bean的生命周期。</p>
-<p>Bean的生命周期就是指：<strong>在Spring中，一个Bean是如何生成的，如何销毁的？</strong></p>
-<a id="more"></a>
-
-<p><img src="/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/Bean%E7%9A%84%E7%94%9F%E6%88%90%E8%BF%87%E7%A8%8B.jpg" alt="Bean的生命周期"></p>
-<h2 id="Bean的生成过程"><a href="#Bean的生成过程" class="headerlink" title="Bean的生成过程"></a>Bean的生成过程</h2><h3 id="1-生成BeanDefinition"><a href="#1-生成BeanDefinition" class="headerlink" title="1.生成BeanDefinition"></a>1.生成BeanDefinition</h3><p>Spring启动的时候会进行扫描，会先调用</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br></pre></td></tr></table></figure>
-<p>拿到所指定的包路径下的所有文件资源（******.class文件）</p>
-<p>然后会遍历每个Resource，为每个Resource生成一个MetadataReader对象，这个对象拥有三个功能：</p>
-<ol>
-<li>获取对应的Resource资源</li>
-<li>获取Resource对应的class元数据信息，包括类的名字，是不是接口、是不是一个注解、是不是抽象类、有没有父类，父类的名字，所实现的所有接口的名字，内部类的类名等等</li>
-<li>获取Resource对应的class上的注解信息，当前类上有哪些注解，当前类中有哪些方法上有注解</li>
-</ol>
-<p>在生成MetadataReader对象时，会利用<strong>ASM</strong>技术解析class文件，得到类的元数据集信息合注解信息，在这个过程中也会利用ClassLoader去加载注解类（<strong>ClassUtils.getDefaultClassLoader()所获得的类加载器</strong>），但是不会加载本类。</p>
-<p>有了MetadataReader对象，就相当于有了当前类的所有信息，但是当前类并没有加载，也是可以理解的，真正在用到这个类的时候才加载。</p>
-<p>然后利用MetadataReader对象生成一个ScannedGenericBeanDefinition对象，<strong>注意此时的BeanDefinition对象中的beanClass属性存储的是当前类的名字，而不是class对象</strong>。（beanClass属性的类型是Object，它即可以存储类的名字，也可以存储class对象）</p>
-<h3 id="2-合并BeanDefinition"><a href="#2-合并BeanDefinition" class="headerlink" title="2.合并BeanDefinition"></a>2.合并BeanDefinition</h3><p>如果某个BeanDefinition存在父BeanDefinition，那么则要进行合并，递归到往上找到父类，用父类的BeanDefinition新建一个RootBeanDefinition，再用子类的属性覆盖父类的属性。（ 在这个过程中，父类和子类存放在beanDefinitionMap当中的BeanDefinition其实是没有改变的，而是新生成了一个RootBeanDefinition存放在了mergedBeanDefinitions这个map里）</p>
-<h3 id="3-加载类"><a href="#3-加载类" class="headerlink" title="3. 加载类"></a>3. 加载类</h3><p>有了BeanDefinition之后，后续就会基于BeanDefinition去创建Bean，而创建Bean就必须实例化对象，而实例化就必须先加载当前BeanDefinition所对应的class，在AbstractAutowireCapableBeanFactory类的createBean()方法中，一开始就会调用：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Class&lt;?&gt; resolvedClass = resolveBeanClass(mbd, beanName);</span><br></pre></td></tr></table></figure>
-
-
-<p>这行代码就是去加载类，该方法是这么实现的：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (mbd.hasBeanClass()) &#123;</span><br><span class="line">    <span class="keyword">return</span> mbd.getBeanClass();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> AccessController.doPrivileged((PrivilegedExceptionAction&lt;Class&lt;?&gt;&gt;) () -&gt;</span><br><span class="line">        doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> doResolveBeanClass(mbd, typesToMatch);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public boolean hasBeanClass() &#123;</span><br><span class="line">    return (this.beanClass instanceof Class);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果beanClass属性的类型是Class，那么就直接返回，如果不是，则会根据类名进行加载（doResolveBeanClass方法所做的事情）</p>
-<p>会利用BeanFactory所设置的类加载器来加载类，如果没有设置，则默认使用**ClassUtils.getDefaultClassLoader()**所返回的类加载器来加载。</p>
-<h4 id="ClassUtils-getDefaultClassLoader"><a href="#ClassUtils-getDefaultClassLoader" class="headerlink" title="ClassUtils.getDefaultClassLoader()"></a><strong>ClassUtils.getDefaultClassLoader()</strong></h4><ol>
-<li>优先获取当前线程中的ClassLoader</li>
-<li>如果为空，则获取加载ClassUtils类的类加载器（正常情况下，就是AppClassLoader，但是如果是在Tomcat中运行，那么则会是Tomcat中为每个应用所创建的WebappClassLoader）</li>
-<li>如果为空，那么则是bootstrap类加载器加载的ClassUtils类，那则获取系统类加载器进行加载</li>
-</ol>
-<h3 id="4-实例化前"><a href="#4-实例化前" class="headerlink" title="4. 实例化前"></a>4. 实例化前</h3><p>允许第三方可以不按照Spring的正常流程来创建一个Bean。</p>
-<p>可以利用InstantiationAwareBeanPostProcessor的postProcessBeforeInstantiation方法来提前返回一个Bean对象，得到对象后会直接</p>
-<p>跳到进行<strong>Bean初始化</strong>的方法，然后直接结束Bean的生命周期</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">applyBeanPostProcessorsBeforeInstantiation</span><span class="params">(Class&lt;?&gt; beanClass, String beanName)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">      <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">         InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">         Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);</span><br><span class="line">         <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="5-推断构造方法"><a href="#5-推断构造方法" class="headerlink" title="5. 推断构造方法"></a>5. 推断构造方法</h3><p>选择一个合适的构造器用来创建实例对象</p>
-<h3 id="6-实例化"><a href="#6-实例化" class="headerlink" title="6. 实例化"></a>6. 实例化</h3><p>构造方法反射得到一个实例</p>
-<h3 id="7-BeanDefinition的后置处理"><a href="#7-BeanDefinition的后置处理" class="headerlink" title="7. BeanDefinition的后置处理"></a>7. BeanDefinition的后置处理</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">        MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;</span><br><span class="line">        bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里可以处理BeanDefinition，但是此时实例对象已经生成好了，所以修改beanClass已经没用了，但是可以修改PropertyValues，比如：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LubanMergedBeanDefinitionPostProcessor</span> <span class="keyword">implements</span> <span class="title">MergedBeanDefinitionPostProcessor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessMergedBeanDefinition</span><span class="params">(RootBeanDefinition beanDefinition, Class&lt;?&gt; beanType, String beanName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (beanName.equals(<span class="string">&quot;userService&quot;</span>)) &#123;</span><br><span class="line">            <span class="comment">//实例对象已经生成，此时变更没有意义</span></span><br><span class="line">            beanDefinition.setBeanClass(User.class); </span><br><span class="line">            beanDefinition.getPropertyValues().add(<span class="string">&quot;name&quot;</span>,<span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="8-实例化后（填充属性前）"><a href="#8-实例化后（填充属性前）" class="headerlink" title="8. 实例化后（填充属性前）"></a>8. 实例化后（填充属性前）</h3><p>可以自己写一个InstantiationAwareBeanPostProcessor，然后重写postProcessAfterInstantiation方法返回false,那么则不会进行属性填充</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">      <span class="keyword">if</span> (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) &#123;</span><br><span class="line">         <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="9-填充属性"><a href="#9-填充属性" class="headerlink" title="9. 填充属性"></a>9. 填充属性</h3><p>使用Spring自带的Autowired，默认是关闭的(AUTOWIRE_NO)</p>
-<p>其实就是Spring自动的根据某个类中的set方法来找bean</p>
-<ul>
-<li>byName就是根据某个set方法所对应的属性名去找bean</li>
-<li>byType，就是根据某个set方法的参数类型去找bean</li>
-</ul>
-<h3 id="10-填充属性后"><a href="#10-填充属性后" class="headerlink" title="10. 填充属性后"></a>10. 填充属性后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 调用BeanPostProcessor分别解析@Autowired、@Resource、@Value，得到属性值</span></span><br><span class="line">      PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">         <span class="keyword">if</span> (filteredPds == <span class="keyword">null</span>) &#123;</span><br><span class="line">            filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);</span><br><span class="line">         &#125;</span><br><span class="line">         pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);</span><br><span class="line">         <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      pvs = pvsToUse;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>@Autowired注解的 AutowiredAnnotationBeanPostProcessor</p>
-<p>@Resource注解的 CommonAnnotationBeanPostProcessor</p>
-</blockquote>
-<h3 id="11-执行Aware"><a href="#11-执行Aware" class="headerlink" title="11. 执行Aware"></a>11. 执行Aware</h3><ol>
-<li>((BeanNameAware) bean).setBeanName(beanName);</li>
-<li>((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);</li>
-<li>((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.<strong>this</strong>);</li>
-</ol>
-<h3 id="12-初始化前"><a href="#12-初始化前" class="headerlink" title="12. 初始化前"></a>12. 初始化前</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessBeforeInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="13-初始化"><a href="#13-初始化" class="headerlink" title="13. 初始化"></a>13. 初始化</h3><ol>
-<li>((InitializingBean) bean).afterPropertiesSet();</li>
-<li>执行BeanDefinition中指定的初始化方法</li>
-</ol>
-<h3 id="14-初始化后"><a href="#14-初始化后" class="headerlink" title="14. 初始化后"></a>14. 初始化后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessAfterInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h2 id="Bean的销毁过程"><a href="#Bean的销毁过程" class="headerlink" title="Bean的销毁过程"></a>Bean的销毁过程</h2><h3 id="1-容器关闭"><a href="#1-容器关闭" class="headerlink" title="1. 容器关闭"></a>1. 容器关闭</h3><h3 id="2-发布ContextClosedEvent事件"><a href="#2-发布ContextClosedEvent事件" class="headerlink" title="2. 发布ContextClosedEvent事件"></a>2. 发布ContextClosedEvent事件</h3><h3 id="3-调用LifecycleProcessor的onClose方法"><a href="#3-调用LifecycleProcessor的onClose方法" class="headerlink" title="3. 调用LifecycleProcessor的onClose方法"></a>3. 调用LifecycleProcessor的onClose方法</h3><h3 id="4-销毁单例Bean"><a href="#4-销毁单例Bean" class="headerlink" title="4. 销毁单例Bean"></a>4. 销毁单例Bean</h3><ol>
-<li>找出所有DisposableBean(实现了DisposableBean接口的Bean)</li>
-<li>遍历每个DisposableBean</li>
-<li>找出依赖了当前DisposableBean的其他Bean，将这些Bean从单例池中移除掉</li>
-<li>调用DisposableBean的destroy()方法</li>
-<li>找到当前DisposableBean所包含的inner beans，将这些Bean从单例池中移除掉 </li>
-</ol>
-<p>这里涉及到一个设计模式：<strong>适配器模式</strong></p>
-<p>在销毁时，Spring会找出实现了DisposableBean接口的Bean。</p>
-<p>但是我们在定义一个Bean时，如果这个Bean实现了DisposableBean接口，或者实现了AutoCloseable接口，或者在BeanDefinition中指定了destroyMethodName，那么这个Bean都属于“DisposableBean”，这些Bean在容器关闭时都要调用相应的销毁方法。</p>
-<p>所以，这里就需要进行适配，将实现了DisposableBean接口、或者AutoCloseable接口等适配成实现了DisposableBean接口，所以就用到了DisposableBeanAdapter，会把实现了AutoCloseable接口的类封装成DisposableBeanAdapter，而DisposableBeanAdapter实现了DisposableBean接口。</p>
 ]]></content>
       <categories>
         <category>框架源码</category>
