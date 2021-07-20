@@ -1,155 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Netty核心功能与线程模型</title>
-    <url>/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
-    <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
-<a id="more"></a>
-
-<p>开发工作量和难度都非常大： 例如客户端面临断线重连、 网络闪断、心跳处理、半包读写、 网络拥塞和异常流的处理等等。</p>
-<p>Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装，解决了上述问题。且Netty拥有高性能、 吞吐量更高，延迟更低，减少资源消耗，最小化不必要的内存复制等优点。</p>
-<p>Netty框架的目标大概可以理解为让业务代码从网络基础应用编码中分离，让开发可以专注开发业务代码，而不用写一大堆类似NIO的网络处理操作。</p>
-<h3 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h3><h4 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h4><p>Reactor 是一种设计模式，<a href="https://en.wikipedia.org/wiki/Reactor_pattern">wikipedia</a> 对其定义如下：</p>
-<blockquote>
-<p>Reactor 是一个或多个输入事件的处理模式，用于处理并发传递给服务处理程序的服务请求。服务处理程序判断传入请求发生的事件，并将它们同步的分派给关联的请求处理程序。</p>
-</blockquote>
-<p>Reactor 模式按照职责不同，通常可以把线程分为 Reactor 线程、IO 线程和业务线程：</p>
-<ul>
-<li>Reactor 线程：轮询通知发生IO的通道，并分派合适的 Handler 处理</li>
-<li>IO 线程：执行实际的读写操作</li>
-<li>业务线程：执行应用程序的业务逻辑</li>
-</ul>
-<h5 id="单线程版本"><a href="#单线程版本" class="headerlink" title="单线程版本"></a>单线程版本</h5><p>单线程版本其实就是用一个线程完成事件的通知，实际的I/O操作和业务处理</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png" alt="basic"></p>
-<p><strong>缺点</strong></p>
-<p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
-<h5 id="多线程版本"><a href="#多线程版本" class="headerlink" title="多线程版本"></a>多线程版本</h5><p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png" alt="multithreaded"></p>
-<p><strong>缺点</strong></p>
-<p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
-<h5 id="主从版本"><a href="#主从版本" class="headerlink" title="主从版本"></a>主从版本</h5><p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png" alt="master-slave"></p>
-<h4 id="Netty线程模型-1"><a href="#Netty线程模型-1" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h4><p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png" alt="netty"></p>
-<p><strong>模型解释</strong></p>
-<ol>
-<li>Netty抽象出两组线程池BossGroup和WorkerGroup，BossGroup专门负责接收客户端的连接，WorkGroup专门负责网络的读写</li>
-<li>BossGroup和WorkGroup都是NioEventLoopGroup</li>
-<li>NioEventLoopGroup相当于一个事件循环线程组，这个组中含有多个事件循环线程，每一个事件循环线程是NioEventLoop</li>
-<li>每个NioEventLoop都有一个selector，用于监听注册在其上的socketChannel的网络通讯</li>
-<li>每个Boss NioEventLoop线程内部循环执行的步骤<ul>
-<li>处理accept事件，与client建立连接，生成NioSocketChannel</li>
-<li>将NioSocketChannel注册到某个worker NioEventLoop上的selector</li>
-<li>处理任务队列的任务，即runAllTask</li>
-</ul>
-</li>
-<li>每个worker NioEventLoop处理NioSocketChannel业务时，会使用pipeline(管道)，管道中维护了很多handler处理器用来处理channel中的数据</li>
-</ol>
-<h3 id="Netty模块组件"><a href="#Netty模块组件" class="headerlink" title="Netty模块组件"></a>Netty模块组件</h3><h4 id="【Bootstrap、ServerBootStrap】："><a href="#【Bootstrap、ServerBootStrap】：" class="headerlink" title="【Bootstrap、ServerBootStrap】："></a>【Bootstrap、ServerBootStrap】：</h4><p>Bootstrap意思是引导，一个Netty应用通用由一个Bootstrap开始，主要作用是配置整个Netty程序，串联各个组件，Netty中Bootstrap类是客户端程序的启动引导类，ServerBootStrap是服务端的启动引导类</p>
-<h4 id="【Future、ChannelFuture】："><a href="#【Future、ChannelFuture】：" class="headerlink" title="【Future、ChannelFuture】："></a>【Future、ChannelFuture】：</h4><p>正如前面介绍,在Netty中所有的IO操作都是异步的，不能立刻得知消息是否被正确处理。</p>
-<p>但是可以过一会等他执行完成或者直接注册一个监听，具体的实现就是通过Future和ChannelFuture，他们可以注册一个监听，当操作执行完成或失败时监听会自动触发注册的监听事件。</p>
-<h4 id="【Channel】："><a href="#【Channel】：" class="headerlink" title="【Channel】："></a>【Channel】：</h4><p>Netty网络通信的组件，能够用于执行网络的I/O操作。Channel为用户提供：</p>
-<ol>
-<li><p>当前网络连接的通道的状态（例如是否打开？是否已连接）</p>
-</li>
-<li><p>网络连接的参数配置（例如接收缓冲区的大小）</p>
-</li>
-<li><p>提供异步的网络I/O操作（如建立连接，读写，绑定端口），异步调用意味着任何I/O调用都将立即返回，并且不保证在调用结束时所请求的I/O操作已完成。</p>
-</li>
-<li><p>调用立即返回一个ChannelFuture实例，通过注册监听器到ChannelFuture上，可以在I/O操作成功、失败或者取消时回调通知调用方。</p>
-</li>
-<li><p>支持关联I/O操作与对应的处理程序</p>
-<p>不同协议、不同的阻塞类型的连接都有不同的Chennle类型与之对应。</p>
-<p>下面是一些常用的Channel类型：</p>
-<blockquote>
-<p>NioSocketChannel，异步的客户端 TCP Socket 连接。</p>
-<p>NioServerSocketChannel，异步的服务器端 TCP Socket 连接。</p>
-<p>NioDatagramChannel，异步的 UDP 连接。</p>
-<p>NioSctpChannel，异步的客户端 Sctp 连接。</p>
-<p>NioSctpServerChannel，异步的 Sctp 服务器端连接。这些通道涵盖了 UDP 和 TCP 网络 IO 以及文件 IO。</p>
-</blockquote>
-</li>
-</ol>
-<h4 id="【Selector】"><a href="#【Selector】" class="headerlink" title="【Selector】:"></a>【Selector】:</h4><p>Netty基于Selector对象实现I/O多路复用，通过Selector一个线程可以监听多个连接的Channel事件。当向一个Selector中注册Channel后，Selector内部的机制就可以自动不断地查询(Select)这些注册的Channel是否有已就绪的I/O事件（例如可读，可写，网络连接完成等），这样程序就可以很简单的使用一个线程高效的管理多个Channel</p>
-<h4 id="【NioEventLoop】："><a href="#【NioEventLoop】：" class="headerlink" title="【NioEventLoop】："></a>【NioEventLoop】：</h4><p>NioEventLoop中维护了一个线程和任务队列，支持异步提交执行任务，线程启动时会调用NioEventLoop的run方法，执行I/O任务和非I/O任务：</p>
-<ul>
-<li>I/O任务，即selectionKey中ready的事件，如accept、connect、read、write等，由processsSelectedKeys方法触发。</li>
-<li>非I/O任务，添加到taskQueue中的任务，如register(),bind()等任务，有runAllTasks方法触发</li>
-</ul>
-<h4 id="【NioEventLoopGroup】："><a href="#【NioEventLoopGroup】：" class="headerlink" title="【NioEventLoopGroup】："></a>【NioEventLoopGroup】：</h4><p>NioEventLoopGroup，主要管理eventLoop的生命周期，可以理解为一个线程池，内部维护了一组线程，每个线程（NioEventLoop）负责处理多个Channel上的事件，而一个Channel只对应于一个线程。</p>
-<h4 id="【ChannelHandler】："><a href="#【ChannelHandler】：" class="headerlink" title="【ChannelHandler】："></a>【ChannelHandler】：</h4><p>ChannelHandler是一个接口，处理I/O事件或拦截I/O操作，并将其转发到其ChannelPipeline(业务处理链)中的下一个处理程序。</p>
-<p>ChanneHandler本身并没有提供很多方法，因为这个接口有许多的方法需要实现，方便使用期间，可以继承他的子类：</p>
-<blockquote>
-<p>ChannelInboundHandler 用于处理入站 I/O 事件。</p>
-<p>ChannelOutboundHandler 用于处理出站 I/O 操作。</p>
-</blockquote>
-<p>或者使用一下适配器类：</p>
-<blockquote>
-<p>ChannelInboundHandlerAdapter 用于处理入站 I/O 事件。</p>
-<p>ChannelOutboundHandlerAdapter 用于处理出站 I/O 操作。</p>
-</blockquote>
-<h4 id="【ChannelHandlerContext】："><a href="#【ChannelHandlerContext】：" class="headerlink" title="【ChannelHandlerContext】："></a>【ChannelHandlerContext】：</h4><p>保存Channel相关的所有上下文信息，同时关联一个ChannelHandler对象。</p>
-<h4 id="【ChannelPipeline】："><a href="#【ChannelPipeline】：" class="headerlink" title="【ChannelPipeline】："></a>【ChannelPipeline】：</h4><p>保存ChannelHandler的List，用于处理或拦截Channel的入站事件和出站操作</p>
-<p>ChannelPipeline实现了一种高级形式的拦截过滤器模式，是用户可以完全控制事件的处理方式，以及Channel中各个ChannelHandler如何相互相互。</p>
-<p>在Netty中每个Channel都有且仅有一个ChannelPipeline与之对应，他们的组成关系：</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/channel_pipeline.png" alt="channel_pipeline"></p>
-<p>一个Channel包含了一个ChannelPipeline，而ChannelPipeline中又维护一个由ChaennlHandlerContext组成的双向链表，并且每个ChannelHandlerContext中有关联着一个ChannelHandler。</p>
-<p>read事件(入站事件)和write事件(出站事件)在一个双向链表中，入站事件会从链表head往后传递到最后一个入站的handler，出站事件会从链表tail往前传递到最前一个出战的handler，两种类型的handler互不干扰</p>
-<h3 id="ByteBuf详解"><a href="#ByteBuf详解" class="headerlink" title="ByteBuf详解"></a>ByteBuf详解</h3><p>从结构上来说，ByteBuf有一串字节数组构成。数组中每个字节用来存放信息。</p>
-<p>ByteBuf提供了两个索引，一个用于读取数据，一个用于写入数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置</p>
-<p>当从ByteBuf读取时，它的readIndex(读索引)将会根据读取的字节递增。</p>
-<p>同样当写ByteBuf时，他的writeIndex也会根据写入的字节数进行递增。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/byte-buf.png" alt="ByteBuf"></p>
-<p>需要注意的是极限的情况是 readerIndex 刚好读到了 writerIndex 写入的地方。<br>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
-<blockquote>
-<p>已经读取的区域：[0,readerindex)</p>
-<p>可读取的区域：[readerindex,writerIndex)</p>
-<p> 可写的区域: [writerIndex,capacity)</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>分布式框架</category>
-      </categories>
-      <tags>
-        <tag>netty</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Netty核心源码解析</title>
-    <url>/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
-    <content><![CDATA[<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
-<li><p>主从Reactor模型</p>
-</li>
-<li><p>NIO多路复用非阻塞</p>
-</li>
-<li><p>无锁串行化思想</p>
-</li>
-<li><p>支持高性能序列化协议</p>
-</li>
-<li><p>零拷贝（直接内存的使用）</p>
-</li>
-<li><p>ByteBuf内存池设计</p>
-</li>
-<li><p>灵活的TCP参数配置能力</p>
-</li>
-<li><p>并发优化</p>
-<a id="more"></a>
-
-</li>
-</ul>
-<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
-<!-- more -->
-
-<h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
-<p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
-]]></content>
-      <categories>
-        <category>分布式框架</category>
-      </categories>
-      <tags>
-        <tag>netty</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ApplicationContext启动过程</title>
     <url>/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/</url>
     <content><![CDATA[<h2 id="如何理解refresh-？"><a href="#如何理解refresh-？" class="headerlink" title="如何理解refresh()？"></a>如何理解refresh()？</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Load or refresh the persistent representation of the configuration,</span></span><br><span class="line"><span class="comment">   * which might an XML file, properties file, or relational database schema.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;As this is a startup method, it should destroy already created singletons</span></span><br><span class="line"><span class="comment">   * if it fails, to avoid dangling resources. In other words, after invocation</span></span><br><span class="line"><span class="comment">   * of that method, either all or no singletons at all should be instantiated.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> BeansException if the bean factory could not be initialized</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> IllegalStateException if already initialized and multiple refresh</span></span><br><span class="line"><span class="comment">   * attempts are not supported</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException</span>;</span><br></pre></td></tr></table></figure>
@@ -307,6 +158,155 @@
       </categories>
       <tags>
         <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Netty核心功能与线程模型</title>
+    <url>/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
+    <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
+<a id="more"></a>
+
+<p>开发工作量和难度都非常大： 例如客户端面临断线重连、 网络闪断、心跳处理、半包读写、 网络拥塞和异常流的处理等等。</p>
+<p>Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装，解决了上述问题。且Netty拥有高性能、 吞吐量更高，延迟更低，减少资源消耗，最小化不必要的内存复制等优点。</p>
+<p>Netty框架的目标大概可以理解为让业务代码从网络基础应用编码中分离，让开发可以专注开发业务代码，而不用写一大堆类似NIO的网络处理操作。</p>
+<h3 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h3><h4 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h4><p>Reactor 是一种设计模式，<a href="https://en.wikipedia.org/wiki/Reactor_pattern">wikipedia</a> 对其定义如下：</p>
+<blockquote>
+<p>Reactor 是一个或多个输入事件的处理模式，用于处理并发传递给服务处理程序的服务请求。服务处理程序判断传入请求发生的事件，并将它们同步的分派给关联的请求处理程序。</p>
+</blockquote>
+<p>Reactor 模式按照职责不同，通常可以把线程分为 Reactor 线程、IO 线程和业务线程：</p>
+<ul>
+<li>Reactor 线程：轮询通知发生IO的通道，并分派合适的 Handler 处理</li>
+<li>IO 线程：执行实际的读写操作</li>
+<li>业务线程：执行应用程序的业务逻辑</li>
+</ul>
+<h5 id="单线程版本"><a href="#单线程版本" class="headerlink" title="单线程版本"></a>单线程版本</h5><p>单线程版本其实就是用一个线程完成事件的通知，实际的I/O操作和业务处理</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png" alt="basic"></p>
+<p><strong>缺点</strong></p>
+<p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
+<h5 id="多线程版本"><a href="#多线程版本" class="headerlink" title="多线程版本"></a>多线程版本</h5><p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png" alt="multithreaded"></p>
+<p><strong>缺点</strong></p>
+<p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
+<h5 id="主从版本"><a href="#主从版本" class="headerlink" title="主从版本"></a>主从版本</h5><p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png" alt="master-slave"></p>
+<h4 id="Netty线程模型-1"><a href="#Netty线程模型-1" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h4><p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png" alt="netty"></p>
+<p><strong>模型解释</strong></p>
+<ol>
+<li>Netty抽象出两组线程池BossGroup和WorkerGroup，BossGroup专门负责接收客户端的连接，WorkGroup专门负责网络的读写</li>
+<li>BossGroup和WorkGroup都是NioEventLoopGroup</li>
+<li>NioEventLoopGroup相当于一个事件循环线程组，这个组中含有多个事件循环线程，每一个事件循环线程是NioEventLoop</li>
+<li>每个NioEventLoop都有一个selector，用于监听注册在其上的socketChannel的网络通讯</li>
+<li>每个Boss NioEventLoop线程内部循环执行的步骤<ul>
+<li>处理accept事件，与client建立连接，生成NioSocketChannel</li>
+<li>将NioSocketChannel注册到某个worker NioEventLoop上的selector</li>
+<li>处理任务队列的任务，即runAllTask</li>
+</ul>
+</li>
+<li>每个worker NioEventLoop处理NioSocketChannel业务时，会使用pipeline(管道)，管道中维护了很多handler处理器用来处理channel中的数据</li>
+</ol>
+<h3 id="Netty模块组件"><a href="#Netty模块组件" class="headerlink" title="Netty模块组件"></a>Netty模块组件</h3><h4 id="【Bootstrap、ServerBootStrap】："><a href="#【Bootstrap、ServerBootStrap】：" class="headerlink" title="【Bootstrap、ServerBootStrap】："></a>【Bootstrap、ServerBootStrap】：</h4><p>Bootstrap意思是引导，一个Netty应用通用由一个Bootstrap开始，主要作用是配置整个Netty程序，串联各个组件，Netty中Bootstrap类是客户端程序的启动引导类，ServerBootStrap是服务端的启动引导类</p>
+<h4 id="【Future、ChannelFuture】："><a href="#【Future、ChannelFuture】：" class="headerlink" title="【Future、ChannelFuture】："></a>【Future、ChannelFuture】：</h4><p>正如前面介绍,在Netty中所有的IO操作都是异步的，不能立刻得知消息是否被正确处理。</p>
+<p>但是可以过一会等他执行完成或者直接注册一个监听，具体的实现就是通过Future和ChannelFuture，他们可以注册一个监听，当操作执行完成或失败时监听会自动触发注册的监听事件。</p>
+<h4 id="【Channel】："><a href="#【Channel】：" class="headerlink" title="【Channel】："></a>【Channel】：</h4><p>Netty网络通信的组件，能够用于执行网络的I/O操作。Channel为用户提供：</p>
+<ol>
+<li><p>当前网络连接的通道的状态（例如是否打开？是否已连接）</p>
+</li>
+<li><p>网络连接的参数配置（例如接收缓冲区的大小）</p>
+</li>
+<li><p>提供异步的网络I/O操作（如建立连接，读写，绑定端口），异步调用意味着任何I/O调用都将立即返回，并且不保证在调用结束时所请求的I/O操作已完成。</p>
+</li>
+<li><p>调用立即返回一个ChannelFuture实例，通过注册监听器到ChannelFuture上，可以在I/O操作成功、失败或者取消时回调通知调用方。</p>
+</li>
+<li><p>支持关联I/O操作与对应的处理程序</p>
+<p>不同协议、不同的阻塞类型的连接都有不同的Chennle类型与之对应。</p>
+<p>下面是一些常用的Channel类型：</p>
+<blockquote>
+<p>NioSocketChannel，异步的客户端 TCP Socket 连接。</p>
+<p>NioServerSocketChannel，异步的服务器端 TCP Socket 连接。</p>
+<p>NioDatagramChannel，异步的 UDP 连接。</p>
+<p>NioSctpChannel，异步的客户端 Sctp 连接。</p>
+<p>NioSctpServerChannel，异步的 Sctp 服务器端连接。这些通道涵盖了 UDP 和 TCP 网络 IO 以及文件 IO。</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="【Selector】"><a href="#【Selector】" class="headerlink" title="【Selector】:"></a>【Selector】:</h4><p>Netty基于Selector对象实现I/O多路复用，通过Selector一个线程可以监听多个连接的Channel事件。当向一个Selector中注册Channel后，Selector内部的机制就可以自动不断地查询(Select)这些注册的Channel是否有已就绪的I/O事件（例如可读，可写，网络连接完成等），这样程序就可以很简单的使用一个线程高效的管理多个Channel</p>
+<h4 id="【NioEventLoop】："><a href="#【NioEventLoop】：" class="headerlink" title="【NioEventLoop】："></a>【NioEventLoop】：</h4><p>NioEventLoop中维护了一个线程和任务队列，支持异步提交执行任务，线程启动时会调用NioEventLoop的run方法，执行I/O任务和非I/O任务：</p>
+<ul>
+<li>I/O任务，即selectionKey中ready的事件，如accept、connect、read、write等，由processsSelectedKeys方法触发。</li>
+<li>非I/O任务，添加到taskQueue中的任务，如register(),bind()等任务，有runAllTasks方法触发</li>
+</ul>
+<h4 id="【NioEventLoopGroup】："><a href="#【NioEventLoopGroup】：" class="headerlink" title="【NioEventLoopGroup】："></a>【NioEventLoopGroup】：</h4><p>NioEventLoopGroup，主要管理eventLoop的生命周期，可以理解为一个线程池，内部维护了一组线程，每个线程（NioEventLoop）负责处理多个Channel上的事件，而一个Channel只对应于一个线程。</p>
+<h4 id="【ChannelHandler】："><a href="#【ChannelHandler】：" class="headerlink" title="【ChannelHandler】："></a>【ChannelHandler】：</h4><p>ChannelHandler是一个接口，处理I/O事件或拦截I/O操作，并将其转发到其ChannelPipeline(业务处理链)中的下一个处理程序。</p>
+<p>ChanneHandler本身并没有提供很多方法，因为这个接口有许多的方法需要实现，方便使用期间，可以继承他的子类：</p>
+<blockquote>
+<p>ChannelInboundHandler 用于处理入站 I/O 事件。</p>
+<p>ChannelOutboundHandler 用于处理出站 I/O 操作。</p>
+</blockquote>
+<p>或者使用一下适配器类：</p>
+<blockquote>
+<p>ChannelInboundHandlerAdapter 用于处理入站 I/O 事件。</p>
+<p>ChannelOutboundHandlerAdapter 用于处理出站 I/O 操作。</p>
+</blockquote>
+<h4 id="【ChannelHandlerContext】："><a href="#【ChannelHandlerContext】：" class="headerlink" title="【ChannelHandlerContext】："></a>【ChannelHandlerContext】：</h4><p>保存Channel相关的所有上下文信息，同时关联一个ChannelHandler对象。</p>
+<h4 id="【ChannelPipeline】："><a href="#【ChannelPipeline】：" class="headerlink" title="【ChannelPipeline】："></a>【ChannelPipeline】：</h4><p>保存ChannelHandler的List，用于处理或拦截Channel的入站事件和出站操作</p>
+<p>ChannelPipeline实现了一种高级形式的拦截过滤器模式，是用户可以完全控制事件的处理方式，以及Channel中各个ChannelHandler如何相互相互。</p>
+<p>在Netty中每个Channel都有且仅有一个ChannelPipeline与之对应，他们的组成关系：</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/channel_pipeline.png" alt="channel_pipeline"></p>
+<p>一个Channel包含了一个ChannelPipeline，而ChannelPipeline中又维护一个由ChaennlHandlerContext组成的双向链表，并且每个ChannelHandlerContext中有关联着一个ChannelHandler。</p>
+<p>read事件(入站事件)和write事件(出站事件)在一个双向链表中，入站事件会从链表head往后传递到最后一个入站的handler，出站事件会从链表tail往前传递到最前一个出战的handler，两种类型的handler互不干扰</p>
+<h3 id="ByteBuf详解"><a href="#ByteBuf详解" class="headerlink" title="ByteBuf详解"></a>ByteBuf详解</h3><p>从结构上来说，ByteBuf有一串字节数组构成。数组中每个字节用来存放信息。</p>
+<p>ByteBuf提供了两个索引，一个用于读取数据，一个用于写入数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置</p>
+<p>当从ByteBuf读取时，它的readIndex(读索引)将会根据读取的字节递增。</p>
+<p>同样当写ByteBuf时，他的writeIndex也会根据写入的字节数进行递增。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/byte-buf.png" alt="ByteBuf"></p>
+<p>需要注意的是极限的情况是 readerIndex 刚好读到了 writerIndex 写入的地方。<br>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
+<blockquote>
+<p>已经读取的区域：[0,readerindex)</p>
+<p>可读取的区域：[readerindex,writerIndex)</p>
+<p> 可写的区域: [writerIndex,capacity)</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
+        <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Netty核心源码解析</title>
+    <url>/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
+    <content><![CDATA[<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
+<li><p>主从Reactor模型</p>
+</li>
+<li><p>NIO多路复用非阻塞</p>
+</li>
+<li><p>无锁串行化思想</p>
+</li>
+<li><p>支持高性能序列化协议</p>
+</li>
+<li><p>零拷贝（直接内存的使用）</p>
+</li>
+<li><p>ByteBuf内存池设计</p>
+</li>
+<li><p>灵活的TCP参数配置能力</p>
+</li>
+<li><p>并发优化</p>
+<a id="more"></a>
+
+</li>
+</ul>
+<h3 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h3><p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/netty.png" alt="netty"></p>
+<!-- more -->
+
+<h3 id="Netty核心源码流程图"><a href="#Netty核心源码流程图" class="headerlink" title="Netty核心源码流程图"></a>Netty核心源码流程图</h3><p><a href="https://www.processon.com/view/link/6026a96a1e0853211997579d">https://www.processon.com/view/link/6026a96a1e0853211997579d</a></p>
+<p><img src="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/server-bootstrap.jpg" alt="server-bootstrap"></p>
+]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
+        <tag>netty</tag>
       </tags>
   </entry>
   <entry>
@@ -613,82 +613,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Spring推断构造方法</title>
-    <url>/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/</url>
-    <content><![CDATA[<p>Spring中的一个bean，需要实例化得到一个对象，而实例化就需要用到构造方法</p>
-<h2 id="类只有一个构建方法"><a href="#类只有一个构建方法" class="headerlink" title="类只有一个构建方法"></a>类只有一个构建方法</h2><ol>
-<li><p>无参的构造方法</p>
-<p>如果只有一个无参的构造方法，那么实例化就只能使用这个方法</p>
-</li>
-<li><p>有参的构造方法</p>
-<p>如果只有一个有参的构造方法，那么实例化时就能使用这个构造方法吗？也是需要分情况讨论的</p>
-<ol>
-<li>使用AnnotationConfigApplicationContext，会使用这个构造方法进行实例化，那么Spring会根据构造方法的参数信息去寻找bean，然后传给构造方法</li>
-<li>使用ClassPathXmlApplicationContext，表示使用XML的方式来使用bean，要么在XML中指定构造方法参数值（手动设置），要不配置autowired=constructor让spring自动寻找bean作为构造方法的参数</li>
-</ol>
-</li>
-</ol>
-<a id="more"></a>
-
-<h2 id="类有多个构造方法"><a href="#类有多个构造方法" class="headerlink" title="类有多个构造方法"></a>类有多个构造方法</h2><ol>
-<li>如果开发者指定了想要使用的构造方法,那么使用这个构建方法</li>
-<li>如果开发者没有指定想要使用的构造方法,那么就看开发者是不是让Spring自动选择构造方法</li>
-<li>如果没有让Spring自动去选择构造方法，则Spring利用无参构造方法，如果没有无参构造方法则报错</li>
-</ol>
-<h3 id="指定使用构造方法"><a href="#指定使用构造方法" class="headerlink" title="指定使用构造方法"></a>指定使用构造方法</h3><ol>
-<li>XML中的<constructor-arg>标签，这个标签表示构造方法参数，所以可以根据这个确定想要使用的构造方法的参数个数，从而确定想要使用的构造方法</constructor-arg></li>
-<li>通过@Autowired注解，注解可以写在构造方法上，标注了注解的构造方法就是开发者指定的构造方法。两者的区别在与通过xml的方式是通过直接指定构造方法参数值的，而通过@Autowired注解则需要通过Spring先byType再byName的方式找到符合条件的bean作为构造方法的入参</li>
-<li>如果多个构造方法上都写了@Autowired(required=true)，Spring要求只存在一个@Autowired或@Autowired(required=true)的构造方法，多个会报错</li>
-</ol>
-<h3 id="Spring自动选择构造方法"><a href="#Spring自动选择构造方法" class="headerlink" title="Spring自动选择构造方法"></a>Spring自动选择构造方法</h3><ol>
-<li>使用ClassPathXmlApplicationContext，XML中直接指定某个bean的autowire为constructor</li>
-<li>使用AnnotationConfigApplicationContext，无法设置bean自动选择构造器</li>
-<li>Spring允许多个@Autowired(required=false)，这种情况下Spring会从这些构造方法中自动寻找一个</li>
-</ol>
-<h2 id="源码思路"><a href="#源码思路" class="headerlink" title="源码思路"></a>源码思路</h2><ol>
-<li>AbstractAutowireCapableBeanFactory类中的createBeanInstance()方法会去创建一个Bean实例</li>
-<li>根据BeanDefinition加载类得到Class对象</li>
-<li>如果BeanDefinition绑定了一个instanceSupplier,那么调用instanceSupplier的get方法得到一个对象并返回</li>
-<li>如果BeanDefinition中存在<strong>factoryMethodName</strong>，那么就调用该工厂方法得到一个bean对象并返回</li>
-<li>如果BeanDefinition已经自动构建过了，那么就调用autowireConstructor()自动构建一个对象</li>
-<li>调用SmartInstantiationAwareBeanPostProcessor的determineCandidateConstructors()方法得到哪些构造方法是可以用的</li>
-<li>如果上一步返回了构造方法，或者当前BeanDefinition的autowireMode属性是AUTOWIRE_CONSTRUCTOR，或者创建Bean时指定了构造方法参数值，那么就调用autowireConstructor()方法自动构造一个对象</li>
-<li>最后，如果不是上述情况，就根据无参构造方法实例化一个对象</li>
-</ol>
-<h3 id="autowireConstructor"><a href="#autowireConstructor" class="headerlink" title="autowireConstructor()"></a>autowireConstructor()</h3><ol>
-<li>先检查是否指定了具体的构造方法和构造方法参数值，或者在BeanDefinition中缓存了具体的构造方法或者构造方法参数值，如果存在那么直接使用该构造方法进行实例化</li>
-<li>如果没有确定的构造方法或者构造方法参数值<ol>
-<li>如果没有确定的构造方法，那么则找出类中所有的构造方法</li>
-<li>如果只有一个无参的构造方法，那么直接使用无参的构造方法进行实例化</li>
-<li>如果有多个可用的构造方法或者当前Bean需要通过构造方法注入<ol>
-<li>根据所指定的的构造方法参数值，确定所需要最少的构造方法参数值个数</li>
-<li>对所有的构造方法进行排序，参数个数多的放在前面（贪婪）</li>
-<li>遍历所有的构造方法，如果不是调用bean方法时所指定的构造方法参数值，那么根据构造方法参数类型找值，如果是制定的构造方法参数值，那么直接利用这些值，如果根据当前构造方法找到了构造方法参数值，那么这个构造方法就是可用的，但是不一定是最佳的，所以这里会有涉及到多个构造方法匹配到了值，会用值和构造方法参数类型进行匹配程度打分，找到一个最匹配的</li>
-</ol>
-</li>
-</ol>
-</li>
-</ol>
-<h4 id="匹配程度计算"><a href="#匹配程度计算" class="headerlink" title="匹配程度计算"></a>匹配程度计算</h4><p>主要是计算找到的bean和构造方法参数类型匹配程度有多高。</p>
-<p>假设bean的类型为A，A的父类是B，B的父类是C，同时A实现了接口D</p>
-<p>如果构造方法的参数类型为A，那么完全匹配，得分为0</p>
-<p>如果构造方法的参数类型为B，那么得分为2</p>
-<p>如果构造方法的参数类型为C，那么得分为4</p>
-<p>如果构造方法的参数类型为D，那么得分为1</p>
-<p>可以直接使用如下代码进行测试：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Object[] objects = <span class="keyword">new</span> Object[]&#123;<span class="keyword">new</span> A()&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 0</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;A.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;B.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;C.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 1</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;D.class&#125;, objects));</span><br></pre></td></tr></table></figure>
-<p>所以，我们可以发现，越匹配分数越低。</p>
-<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><p><img src="/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/autowireConstructor.jpg" alt="autowireConstructor"></p>
-<h3 id="determineCandidateConstructors"><a href="#determineCandidateConstructors" class="headerlink" title="determineCandidateConstructors()"></a>determineCandidateConstructors()</h3><p><img src="/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/determineCandidateConstructors.jpg" alt="determineCandidateConstructors"></p>
-]]></content>
-      <categories>
-        <category>框架源码</category>
-      </categories>
-      <tags>
-        <tag>spring</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Spring依赖注入流程</title>
     <url>/2021/06/09/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B/</url>
     <content><![CDATA[<p><strong>Spring有几种依赖注入的方式</strong></p>
@@ -806,6 +730,82 @@
 <p>如果@Resource注解中指定了name属性，那么则只会根据name属性的值去找bean，如果找不到则报错</p>
 <p>如果@Resource注解没有指定name属性，那么会先判断当前注入点名字（属性名字或普通方法名字或者set方法后缀）是不是存在Bean，如果存在，则直接根据注入点名字取获取bean，如果不存在，则会走@Autowired注解的逻辑，会根据注入点类型去找Bean</p>
 <h4 id="核心流程-1"><a href="#核心流程-1" class="headerlink" title="核心流程"></a>核心流程</h4><p><img src="/2021/06/09/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B/Resource%E6%89%A7%E8%A1%8C%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B.jpg" alt="Resource执行注入流程"></p>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring推断构造方法</title>
+    <url>/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/</url>
+    <content><![CDATA[<p>Spring中的一个bean，需要实例化得到一个对象，而实例化就需要用到构造方法</p>
+<h2 id="类只有一个构建方法"><a href="#类只有一个构建方法" class="headerlink" title="类只有一个构建方法"></a>类只有一个构建方法</h2><ol>
+<li><p>无参的构造方法</p>
+<p>如果只有一个无参的构造方法，那么实例化就只能使用这个方法</p>
+</li>
+<li><p>有参的构造方法</p>
+<p>如果只有一个有参的构造方法，那么实例化时就能使用这个构造方法吗？也是需要分情况讨论的</p>
+<ol>
+<li>使用AnnotationConfigApplicationContext，会使用这个构造方法进行实例化，那么Spring会根据构造方法的参数信息去寻找bean，然后传给构造方法</li>
+<li>使用ClassPathXmlApplicationContext，表示使用XML的方式来使用bean，要么在XML中指定构造方法参数值（手动设置），要不配置autowired=constructor让spring自动寻找bean作为构造方法的参数</li>
+</ol>
+</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="类有多个构造方法"><a href="#类有多个构造方法" class="headerlink" title="类有多个构造方法"></a>类有多个构造方法</h2><ol>
+<li>如果开发者指定了想要使用的构造方法,那么使用这个构建方法</li>
+<li>如果开发者没有指定想要使用的构造方法,那么就看开发者是不是让Spring自动选择构造方法</li>
+<li>如果没有让Spring自动去选择构造方法，则Spring利用无参构造方法，如果没有无参构造方法则报错</li>
+</ol>
+<h3 id="指定使用构造方法"><a href="#指定使用构造方法" class="headerlink" title="指定使用构造方法"></a>指定使用构造方法</h3><ol>
+<li>XML中的<constructor-arg>标签，这个标签表示构造方法参数，所以可以根据这个确定想要使用的构造方法的参数个数，从而确定想要使用的构造方法</constructor-arg></li>
+<li>通过@Autowired注解，注解可以写在构造方法上，标注了注解的构造方法就是开发者指定的构造方法。两者的区别在与通过xml的方式是通过直接指定构造方法参数值的，而通过@Autowired注解则需要通过Spring先byType再byName的方式找到符合条件的bean作为构造方法的入参</li>
+<li>如果多个构造方法上都写了@Autowired(required=true)，Spring要求只存在一个@Autowired或@Autowired(required=true)的构造方法，多个会报错</li>
+</ol>
+<h3 id="Spring自动选择构造方法"><a href="#Spring自动选择构造方法" class="headerlink" title="Spring自动选择构造方法"></a>Spring自动选择构造方法</h3><ol>
+<li>使用ClassPathXmlApplicationContext，XML中直接指定某个bean的autowire为constructor</li>
+<li>使用AnnotationConfigApplicationContext，无法设置bean自动选择构造器</li>
+<li>Spring允许多个@Autowired(required=false)，这种情况下Spring会从这些构造方法中自动寻找一个</li>
+</ol>
+<h2 id="源码思路"><a href="#源码思路" class="headerlink" title="源码思路"></a>源码思路</h2><ol>
+<li>AbstractAutowireCapableBeanFactory类中的createBeanInstance()方法会去创建一个Bean实例</li>
+<li>根据BeanDefinition加载类得到Class对象</li>
+<li>如果BeanDefinition绑定了一个instanceSupplier,那么调用instanceSupplier的get方法得到一个对象并返回</li>
+<li>如果BeanDefinition中存在<strong>factoryMethodName</strong>，那么就调用该工厂方法得到一个bean对象并返回</li>
+<li>如果BeanDefinition已经自动构建过了，那么就调用autowireConstructor()自动构建一个对象</li>
+<li>调用SmartInstantiationAwareBeanPostProcessor的determineCandidateConstructors()方法得到哪些构造方法是可以用的</li>
+<li>如果上一步返回了构造方法，或者当前BeanDefinition的autowireMode属性是AUTOWIRE_CONSTRUCTOR，或者创建Bean时指定了构造方法参数值，那么就调用autowireConstructor()方法自动构造一个对象</li>
+<li>最后，如果不是上述情况，就根据无参构造方法实例化一个对象</li>
+</ol>
+<h3 id="autowireConstructor"><a href="#autowireConstructor" class="headerlink" title="autowireConstructor()"></a>autowireConstructor()</h3><ol>
+<li>先检查是否指定了具体的构造方法和构造方法参数值，或者在BeanDefinition中缓存了具体的构造方法或者构造方法参数值，如果存在那么直接使用该构造方法进行实例化</li>
+<li>如果没有确定的构造方法或者构造方法参数值<ol>
+<li>如果没有确定的构造方法，那么则找出类中所有的构造方法</li>
+<li>如果只有一个无参的构造方法，那么直接使用无参的构造方法进行实例化</li>
+<li>如果有多个可用的构造方法或者当前Bean需要通过构造方法注入<ol>
+<li>根据所指定的的构造方法参数值，确定所需要最少的构造方法参数值个数</li>
+<li>对所有的构造方法进行排序，参数个数多的放在前面（贪婪）</li>
+<li>遍历所有的构造方法，如果不是调用bean方法时所指定的构造方法参数值，那么根据构造方法参数类型找值，如果是制定的构造方法参数值，那么直接利用这些值，如果根据当前构造方法找到了构造方法参数值，那么这个构造方法就是可用的，但是不一定是最佳的，所以这里会有涉及到多个构造方法匹配到了值，会用值和构造方法参数类型进行匹配程度打分，找到一个最匹配的</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h4 id="匹配程度计算"><a href="#匹配程度计算" class="headerlink" title="匹配程度计算"></a>匹配程度计算</h4><p>主要是计算找到的bean和构造方法参数类型匹配程度有多高。</p>
+<p>假设bean的类型为A，A的父类是B，B的父类是C，同时A实现了接口D</p>
+<p>如果构造方法的参数类型为A，那么完全匹配，得分为0</p>
+<p>如果构造方法的参数类型为B，那么得分为2</p>
+<p>如果构造方法的参数类型为C，那么得分为4</p>
+<p>如果构造方法的参数类型为D，那么得分为1</p>
+<p>可以直接使用如下代码进行测试：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Object[] objects = <span class="keyword">new</span> Object[]&#123;<span class="keyword">new</span> A()&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 0</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;A.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;B.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;C.class&#125;, objects));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 1</span></span><br><span class="line">System.out.println(MethodInvoker.getTypeDifferenceWeight(<span class="keyword">new</span> Class[]&#123;D.class&#125;, objects));</span><br></pre></td></tr></table></figure>
+<p>所以，我们可以发现，越匹配分数越低。</p>
+<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><p><img src="/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/autowireConstructor.jpg" alt="autowireConstructor"></p>
+<h3 id="determineCandidateConstructors"><a href="#determineCandidateConstructors" class="headerlink" title="determineCandidateConstructors()"></a>determineCandidateConstructors()</h3><p><img src="/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/determineCandidateConstructors.jpg" alt="determineCandidateConstructors"></p>
 ]]></content>
       <categories>
         <category>框架源码</category>
