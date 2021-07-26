@@ -20,30 +20,33 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="done is better than perfect">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Freeman&#39;s blog">
-<meta property="og:url" content="http://example.com/index.html">
+  <meta name="description" content="在介绍Spring整合mybatis原理之前，我们稍微介绍一下Mybatis的使用场景 Mybatis的使用场景在Mybatis中，我们可以使用一个接口去定义执行sql，简化代码如下： 定义一个接口，@Select表示要执行的查询语句 1234public interface UserMapper &amp;#123;	@Select(&quot;select * from user where id &#x3D;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring整合Mybatis核心原理">
+<meta property="og:url" content="http://example.com/2021/07/24/Spring%E6%95%B4%E5%90%88Mybatis%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86/index.html">
 <meta property="og:site_name" content="Freeman&#39;s blog">
-<meta property="og:description" content="done is better than perfect">
+<meta property="og:description" content="在介绍Spring整合mybatis原理之前，我们稍微介绍一下Mybatis的使用场景 Mybatis的使用场景在Mybatis中，我们可以使用一个接口去定义执行sql，简化代码如下： 定义一个接口，@Select表示要执行的查询语句 1234public interface UserMapper &amp;#123;	@Select(&quot;select * from user where id &#x3D;">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-07-24T09:42:23.000Z">
+<meta property="article:modified_time" content="2021-07-26T00:54:41.527Z">
 <meta property="article:author" content="Freeman">
+<meta property="article:tag" content="spring">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://example.com/">
+<link rel="canonical" href="http://example.com/2021/07/24/Spring%E6%95%B4%E5%90%88Mybatis%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome : true,
-    isPost : false,
+    isHome : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>Freeman's blog</title>
+  <title>Spring整合Mybatis核心原理 | Freeman's blog</title>
   
 
 
@@ -179,9 +182,10 @@
         <div class="content-wrap">
           
 
-          <div class="content index posts-expand">
+          <div class="content post posts-expand">
             
-      
+
+    
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
@@ -197,10 +201,9 @@
       <meta itemprop="name" content="Freeman's blog">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/07/24/Spring%E6%95%B4%E5%90%88Mybatis%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86/" class="post-title-link" itemprop="url">Spring整合Mybatis核心原理</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          Spring整合Mybatis核心原理
+        </h1>
 
         <div class="post-meta">
             <span class="post-meta-item">
@@ -239,7 +242,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>在介绍Spring整合mybatis原理之前，我们稍微介绍一下Mybatis的使用场景</p>
+        <p>在介绍Spring整合mybatis原理之前，我们稍微介绍一下Mybatis的使用场景</p>
 <h2 id="Mybatis的使用场景"><a href="#Mybatis的使用场景" class="headerlink" title="Mybatis的使用场景"></a>Mybatis的使用场景</h2><p>在Mybatis中，我们可以使用一个接口去定义执行sql，简化代码如下：</p>
 <p>定义一个接口，@Select表示要执行的查询语句</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">UserMapper</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Select(&quot;select * from user where id = #&#123;id&#125;&quot;)</span></span><br><span class="line">	<span class="function">User <span class="title">selectById</span><span class="params">(Long id)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -309,794 +312,34 @@
 <p>带来的好处是，可以不使用@MapperScan注解，而可以直接定义一个Bean，比如：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> MapperScannerConfigurer <span class="title">mapperScannerConfigurer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    MapperScannerConfigurer mapperScannerConfigurer = <span class="keyword">new</span> MapperScannerConfigurer();</span><br><span class="line">    mapperScannerConfigurer.setBasePackage(<span class="string">&quot;com.luban&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> mapperScannerConfigurer;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h6 id><a href="#" class="headerlink" title></a></h6>
-      
     </div>
 
     
     
     
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
+          <div class="post-tags">
+              <a href="/tags/spring/" rel="tag"># spring</a>
+          </div>
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/IMG_7380.JPG">
-      <meta itemprop="name" content="Freeman">
-      <meta itemprop="description" content="done is better than perfect">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Freeman's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/" class="post-title-link" itemprop="url">Spring推断构造方法</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-07-19 21:57:01" itemprop="dateCreated datePublished" datetime="2021-07-19T21:57:01+08:00">2021-07-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-07-24 17:41:10" itemprop="dateModified" datetime="2021-07-24T17:41:10+08:00">2021-07-24</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Spring中的一个bean，需要实例化得到一个对象，而实例化就需要用到构造方法</p>
-<h2 id="类只有一个构建方法"><a href="#类只有一个构建方法" class="headerlink" title="类只有一个构建方法"></a>类只有一个构建方法</h2><ol>
-<li><p>无参的构造方法</p>
-<p>如果只有一个无参的构造方法，那么实例化就只能使用这个方法</p>
-</li>
-<li><p>有参的构造方法</p>
-<p>如果只有一个有参的构造方法，那么实例化时就能使用这个构造方法吗？也是需要分情况讨论的</p>
-<ol>
-<li>使用AnnotationConfigApplicationContext，会使用这个构造方法进行实例化，那么Spring会根据构造方法的参数信息去寻找bean，然后传给构造方法</li>
-<li>使用ClassPathXmlApplicationContext，表示使用XML的方式来使用bean，要么在XML中指定构造方法参数值（手动设置），要不配置autowired=constructor让spring自动寻找bean作为构造方法的参数</li>
-</ol>
-</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
         
-      
-    </div>
 
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/IMG_7380.JPG">
-      <meta itemprop="name" content="Freeman">
-      <meta itemprop="description" content="done is better than perfect">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Freeman's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-title-link" itemprop="url">Spring解析配置类以及扫描源码解析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-07-12 01:29:26" itemprop="dateCreated datePublished" datetime="2021-07-12T01:29:26+08:00">2021-07-12</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-07-20 02:27:26" itemprop="dateModified" datetime="2021-07-20T02:27:26+08:00">2021-07-20</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="执行BeanFactoryPostProcessor"><a href="#执行BeanFactoryPostProcessor" class="headerlink" title="执行BeanFactoryPostProcessor"></a>执行BeanFactoryPostProcessor</h2><ol>
-<li>执行通过ApplicationContext添加进来的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
-<li>执行BeanFactory中实现了PriorityOrdered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
-<li>执行BeanFactory中实现了Ordered接口的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
-<li>执行BeanFactory中其他的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry()方法</li>
-<li>执行上面所有的BeanDefinitionRegistryPostProcessor的postProcessBeanFactory()方法</li>
-<li>执行通过ApplicationContext添加进来的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
-<li>执行BeanFactory中实现了PriorityOrdered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
-<li>执行BeanFactory中实现了Ordered接口的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
-<li>执行BeanFactory中其他的BeanFactoryPostProcessor的postProcessBeanFactory()方法</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/07/12/Spring%E8%A7%A3%E6%9E%90%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BB%A5%E5%8F%8A%E6%89%AB%E6%8F%8F%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
         
-      
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/07/19/Spring%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95/" rel="prev" title="Spring推断构造方法">
+      <i class="fa fa-chevron-left"></i> Spring推断构造方法
+    </a></div>
+      <div class="post-nav-item"></div>
     </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
       </footer>
+    
   </article>
   
   
   
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/IMG_7380.JPG">
-      <meta itemprop="name" content="Freeman">
-      <meta itemprop="description" content="done is better than perfect">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Freeman's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" class="post-title-link" itemprop="url">ApplicationContext启动过程</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2021-07-04 19:56:03 / 修改时间：23:07:10" itemprop="dateCreated datePublished" datetime="2021-07-04T19:56:03+08:00">2021-07-04</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="如何理解refresh-？"><a href="#如何理解refresh-？" class="headerlink" title="如何理解refresh()？"></a>如何理解refresh()？</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Load or refresh the persistent representation of the configuration,</span></span><br><span class="line"><span class="comment">   * which might an XML file, properties file, or relational database schema.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;As this is a startup method, it should destroy already created singletons</span></span><br><span class="line"><span class="comment">   * if it fails, to avoid dangling resources. In other words, after invocation</span></span><br><span class="line"><span class="comment">   * of that method, either all or no singletons at all should be instantiated.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> BeansException if the bean factory could not be initialized</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> IllegalStateException if already initialized and multiple refresh</span></span><br><span class="line"><span class="comment">   * attempts are not supported</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException</span>;</span><br></pre></td></tr></table></figure>
-<p>这是ConfigurableApplicationContext接口上refresh()方法的注释，意思是：加载或刷新持久化的配置，可能是XML文件、属性文件或关系数据库中存储的。由于这是一个启动方法，如果失败，它应该销毁已经创建的单例，以避免暂用资源。换句话说，在调用该方法之后，应该实例化所有的单例，或者根本不实例化单例 。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/IMG_7380.JPG">
-      <meta itemprop="name" content="Freeman">
-      <meta itemprop="description" content="done is better than perfect">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Freeman's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/" class="post-title-link" itemprop="url">Spring依赖注入源码</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-06-16 23:01:09" itemprop="dateCreated datePublished" datetime="2021-06-16T23:01:09+08:00">2021-06-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-06-28 01:36:40" itemprop="dateModified" datetime="2021-06-28T01:36:40+08:00">2021-06-28</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>上节讲了Spring中的自动注入(byName,byType)和@Autowired注解的工作原理以及源码分析，这一节我们来分析剩下的核心的方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function">Object <span class="title">resolveDependency</span><span class="params">(DependencyDescriptor descriptor, <span class="meta">@Nullable</span> String requestingBeanName,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="meta">@Nullable</span> Set&lt;String&gt; autowiredBeanNames, <span class="meta">@Nullable</span> TypeConverter typeConverter)</span> <span class="keyword">throws</span> BeansException</span>;</span><br></pre></td></tr></table></figure>
-<p>该方法表示，传入一个依赖描述（DependencyDescriptor），该方法会根据该依赖描述从BeanFactory中找出对应的唯一的一个Bean对象。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/09/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/IMG_7380.JPG">
-      <meta itemprop="name" content="Freeman">
-      <meta itemprop="description" content="done is better than perfect">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Freeman's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/09/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B/" class="post-title-link" itemprop="url">Spring依赖注入流程</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-06-09 00:40:00" itemprop="dateCreated datePublished" datetime="2021-06-09T00:40:00+08:00">2021-06-09</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-06-23 01:26:06" itemprop="dateModified" datetime="2021-06-23T01:26:06+08:00">2021-06-23</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><strong>Spring有几种依赖注入的方式</strong></p>
-<p>首先分两种：</p>
-<ol>
-<li>手动注入</li>
-<li>自动注入</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/06/09/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/IMG_7380.JPG">
-      <meta itemprop="name" content="Freeman">
-      <meta itemprop="description" content="done is better than perfect">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Freeman's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/" class="post-title-link" itemprop="url">Spring中Bean的生命周期</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-05-30 00:17:38" itemprop="dateCreated datePublished" datetime="2021-05-30T00:17:38+08:00">2021-05-30</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-06-29 21:09:02" itemprop="dateModified" datetime="2021-06-29T21:09:02+08:00">2021-06-29</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Spring最重要的功能就是帮助程序员创建对象（也就是IOC），而启动Spring就是为创建Bean对象做准备，所以我们先明白Spring到底是则呢怎么去创建Bean的，也就是先弄明白Bean的生命周期。</p>
-<p>Bean的生命周期就是指：<strong>在Spring中，一个Bean是如何生成的，如何销毁的？</strong></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/IMG_7380.JPG">
-      <meta itemprop="name" content="Freeman">
-      <meta itemprop="description" content="done is better than perfect">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Freeman's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/" class="post-title-link" itemprop="url">Spring中的核心概念</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-03-22 16:35:38" itemprop="dateCreated datePublished" datetime="2021-03-22T16:35:38+08:00">2021-03-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-06-23 01:26:14" itemprop="dateModified" datetime="2021-06-23T01:26:14+08:00">2021-06-23</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81/" itemprop="url" rel="index"><span itemprop="name">框架源码</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="BeanDefinition"><a href="#BeanDefinition" class="headerlink" title="BeanDefinition"></a>BeanDefinition</h2><p>Bean的定义，BeanDefinition可以理解为底层源码级别的一个概念，也可以理解为Spring提供的一种<strong>API使用</strong>的方式。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/03/22/Spring%E4%B8%AD%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/IMG_7380.JPG">
-      <meta itemprop="name" content="Freeman">
-      <meta itemprop="description" content="done is better than perfect">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Freeman's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-title-link" itemprop="url">Netty核心源码解析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-02-13 00:12:53" itemprop="dateCreated datePublished" datetime="2021-02-13T00:12:53+08:00">2021-02-13</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-06-05 23:40:29" itemprop="dateModified" datetime="2021-06-05T23:40:29+08:00">2021-06-05</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">分布式框架</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
-<li><p>主从Reactor模型</p>
-</li>
-<li><p>NIO多路复用非阻塞</p>
-</li>
-<li><p>无锁串行化思想</p>
-</li>
-<li><p>支持高性能序列化协议</p>
-</li>
-<li><p>零拷贝（直接内存的使用）</p>
-</li>
-<li><p>ByteBuf内存池设计</p>
-</li>
-<li><p>灵活的TCP参数配置能力</p>
-</li>
-<li><p>并发优化</p></li></ul>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/IMG_7380.JPG">
-      <meta itemprop="name" content="Freeman">
-      <meta itemprop="description" content="done is better than perfect">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Freeman's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/" class="post-title-link" itemprop="url">Netty编解码&粘包拆包&心跳机制&断线自动重连</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-01-25 14:14:20" itemprop="dateCreated datePublished" datetime="2021-01-25T14:14:20+08:00">2021-01-25</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-02-08 14:51:56" itemprop="dateModified" datetime="2021-02-08T14:51:56+08:00">2021-02-08</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">分布式框架</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="Netty编解码"><a href="#Netty编解码" class="headerlink" title="Netty编解码"></a>Netty编解码</h3><p>Netty涉及到编解码的组件有Channel、ChannelHandler、ChannelPipe等</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/01/25/Netty%E7%BC%96%E8%A7%A3%E7%A0%81-%E7%B2%98%E5%8C%85%E6%8B%86%E5%8C%85-%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6-%E6%96%AD%E7%BA%BF%E8%87%AA%E5%8A%A8%E9%87%8D%E8%BF%9E/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-
-  
-  <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
-  </nav>
 
 
 
@@ -1148,6 +391,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Mybatis%E7%9A%84%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">Mybatis的使用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90%E9%9C%80%E8%A6%81%E8%A7%A3%E5%86%B3%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text">分析需要解决的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E9%97%AE%E9%A2%98"><span class="nav-number">3.</span> <span class="nav-text">解决问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A9%E7%94%A8BeanDefinition%E7%9A%84class%E5%B1%9E%E6%80%A7"><span class="nav-number">3.1.</span> <span class="nav-text">利用BeanDefinition的class属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A9%E7%94%A8FactoryBean"><span class="nav-number">3.2.</span> <span class="nav-text">利用FactoryBean</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Import"><span class="nav-number">3.3.</span> <span class="nav-text">Import</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Mybatis%E5%92%8CSpring%E6%95%B4%E5%90%88%E5%8E%9F%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">Mybatis和Spring整合原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-2%E7%89%88%E6%9C%AC"><span class="nav-number">5.1.</span> <span class="nav-text">1.3.2版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-0-5%E7%89%88%E6%9C%AC"><span class="nav-number">5.2.</span> <span class="nav-text">2.0.5版本</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link"><span class="nav-number">5.2.0.0.1.</span> <span class="nav-text"></span></a></li></ol></li></ol></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
