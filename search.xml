@@ -1,6 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Netty核心功能与线程模型</title>
+    <url>/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
+    <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
+<a id="more"></a>
+
+<p>开发工作量和难度都非常大： 例如客户端面临断线重连、 网络闪断、心跳处理、半包读写、 网络拥塞和异常流的处理等等。</p>
+<p>Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装，解决了上述问题。且Netty拥有高性能、 吞吐量更高，延迟更低，减少资源消耗，最小化不必要的内存复制等优点。</p>
+<p>Netty框架的目标大概可以理解为让业务代码从网络基础应用编码中分离，让开发可以专注开发业务代码，而不用写一大堆类似NIO的网络处理操作。</p>
+<h3 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h3><h4 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h4><p>Reactor 是一种设计模式，<a href="https://en.wikipedia.org/wiki/Reactor_pattern">wikipedia</a> 对其定义如下：</p>
+<blockquote>
+<p>Reactor 是一个或多个输入事件的处理模式，用于处理并发传递给服务处理程序的服务请求。服务处理程序判断传入请求发生的事件，并将它们同步的分派给关联的请求处理程序。</p>
+</blockquote>
+<p>Reactor 模式按照职责不同，通常可以把线程分为 Reactor 线程、IO 线程和业务线程：</p>
+<ul>
+<li>Reactor 线程：轮询通知发生IO的通道，并分派合适的 Handler 处理</li>
+<li>IO 线程：执行实际的读写操作</li>
+<li>业务线程：执行应用程序的业务逻辑</li>
+</ul>
+<h5 id="单线程版本"><a href="#单线程版本" class="headerlink" title="单线程版本"></a>单线程版本</h5><p>单线程版本其实就是用一个线程完成事件的通知，实际的I/O操作和业务处理</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png" alt="basic"></p>
+<p><strong>缺点</strong></p>
+<p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
+<h5 id="多线程版本"><a href="#多线程版本" class="headerlink" title="多线程版本"></a>多线程版本</h5><p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png" alt="multithreaded"></p>
+<p><strong>缺点</strong></p>
+<p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
+<h5 id="主从版本"><a href="#主从版本" class="headerlink" title="主从版本"></a>主从版本</h5><p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png" alt="master-slave"></p>
+<h4 id="Netty线程模型-1"><a href="#Netty线程模型-1" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h4><p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png" alt="netty"></p>
+<p><strong>模型解释</strong></p>
+<ol>
+<li>Netty抽象出两组线程池BossGroup和WorkerGroup，BossGroup专门负责接收客户端的连接，WorkGroup专门负责网络的读写</li>
+<li>BossGroup和WorkGroup都是NioEventLoopGroup</li>
+<li>NioEventLoopGroup相当于一个事件循环线程组，这个组中含有多个事件循环线程，每一个事件循环线程是NioEventLoop</li>
+<li>每个NioEventLoop都有一个selector，用于监听注册在其上的socketChannel的网络通讯</li>
+<li>每个Boss NioEventLoop线程内部循环执行的步骤<ul>
+<li>处理accept事件，与client建立连接，生成NioSocketChannel</li>
+<li>将NioSocketChannel注册到某个worker NioEventLoop上的selector</li>
+<li>处理任务队列的任务，即runAllTask</li>
+</ul>
+</li>
+<li>每个worker NioEventLoop处理NioSocketChannel业务时，会使用pipeline(管道)，管道中维护了很多handler处理器用来处理channel中的数据</li>
+</ol>
+<h3 id="Netty模块组件"><a href="#Netty模块组件" class="headerlink" title="Netty模块组件"></a>Netty模块组件</h3><h4 id="【Bootstrap、ServerBootStrap】："><a href="#【Bootstrap、ServerBootStrap】：" class="headerlink" title="【Bootstrap、ServerBootStrap】："></a>【Bootstrap、ServerBootStrap】：</h4><p>Bootstrap意思是引导，一个Netty应用通用由一个Bootstrap开始，主要作用是配置整个Netty程序，串联各个组件，Netty中Bootstrap类是客户端程序的启动引导类，ServerBootStrap是服务端的启动引导类</p>
+<h4 id="【Future、ChannelFuture】："><a href="#【Future、ChannelFuture】：" class="headerlink" title="【Future、ChannelFuture】："></a>【Future、ChannelFuture】：</h4><p>正如前面介绍,在Netty中所有的IO操作都是异步的，不能立刻得知消息是否被正确处理。</p>
+<p>但是可以过一会等他执行完成或者直接注册一个监听，具体的实现就是通过Future和ChannelFuture，他们可以注册一个监听，当操作执行完成或失败时监听会自动触发注册的监听事件。</p>
+<h4 id="【Channel】："><a href="#【Channel】：" class="headerlink" title="【Channel】："></a>【Channel】：</h4><p>Netty网络通信的组件，能够用于执行网络的I/O操作。Channel为用户提供：</p>
+<ol>
+<li><p>当前网络连接的通道的状态（例如是否打开？是否已连接）</p>
+</li>
+<li><p>网络连接的参数配置（例如接收缓冲区的大小）</p>
+</li>
+<li><p>提供异步的网络I/O操作（如建立连接，读写，绑定端口），异步调用意味着任何I/O调用都将立即返回，并且不保证在调用结束时所请求的I/O操作已完成。</p>
+</li>
+<li><p>调用立即返回一个ChannelFuture实例，通过注册监听器到ChannelFuture上，可以在I/O操作成功、失败或者取消时回调通知调用方。</p>
+</li>
+<li><p>支持关联I/O操作与对应的处理程序</p>
+<p>不同协议、不同的阻塞类型的连接都有不同的Chennle类型与之对应。</p>
+<p>下面是一些常用的Channel类型：</p>
+<blockquote>
+<p>NioSocketChannel，异步的客户端 TCP Socket 连接。</p>
+<p>NioServerSocketChannel，异步的服务器端 TCP Socket 连接。</p>
+<p>NioDatagramChannel，异步的 UDP 连接。</p>
+<p>NioSctpChannel，异步的客户端 Sctp 连接。</p>
+<p>NioSctpServerChannel，异步的 Sctp 服务器端连接。这些通道涵盖了 UDP 和 TCP 网络 IO 以及文件 IO。</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="【Selector】"><a href="#【Selector】" class="headerlink" title="【Selector】:"></a>【Selector】:</h4><p>Netty基于Selector对象实现I/O多路复用，通过Selector一个线程可以监听多个连接的Channel事件。当向一个Selector中注册Channel后，Selector内部的机制就可以自动不断地查询(Select)这些注册的Channel是否有已就绪的I/O事件（例如可读，可写，网络连接完成等），这样程序就可以很简单的使用一个线程高效的管理多个Channel</p>
+<h4 id="【NioEventLoop】："><a href="#【NioEventLoop】：" class="headerlink" title="【NioEventLoop】："></a>【NioEventLoop】：</h4><p>NioEventLoop中维护了一个线程和任务队列，支持异步提交执行任务，线程启动时会调用NioEventLoop的run方法，执行I/O任务和非I/O任务：</p>
+<ul>
+<li>I/O任务，即selectionKey中ready的事件，如accept、connect、read、write等，由processsSelectedKeys方法触发。</li>
+<li>非I/O任务，添加到taskQueue中的任务，如register(),bind()等任务，有runAllTasks方法触发</li>
+</ul>
+<h4 id="【NioEventLoopGroup】："><a href="#【NioEventLoopGroup】：" class="headerlink" title="【NioEventLoopGroup】："></a>【NioEventLoopGroup】：</h4><p>NioEventLoopGroup，主要管理eventLoop的生命周期，可以理解为一个线程池，内部维护了一组线程，每个线程（NioEventLoop）负责处理多个Channel上的事件，而一个Channel只对应于一个线程。</p>
+<h4 id="【ChannelHandler】："><a href="#【ChannelHandler】：" class="headerlink" title="【ChannelHandler】："></a>【ChannelHandler】：</h4><p>ChannelHandler是一个接口，处理I/O事件或拦截I/O操作，并将其转发到其ChannelPipeline(业务处理链)中的下一个处理程序。</p>
+<p>ChanneHandler本身并没有提供很多方法，因为这个接口有许多的方法需要实现，方便使用期间，可以继承他的子类：</p>
+<blockquote>
+<p>ChannelInboundHandler 用于处理入站 I/O 事件。</p>
+<p>ChannelOutboundHandler 用于处理出站 I/O 操作。</p>
+</blockquote>
+<p>或者使用一下适配器类：</p>
+<blockquote>
+<p>ChannelInboundHandlerAdapter 用于处理入站 I/O 事件。</p>
+<p>ChannelOutboundHandlerAdapter 用于处理出站 I/O 操作。</p>
+</blockquote>
+<h4 id="【ChannelHandlerContext】："><a href="#【ChannelHandlerContext】：" class="headerlink" title="【ChannelHandlerContext】："></a>【ChannelHandlerContext】：</h4><p>保存Channel相关的所有上下文信息，同时关联一个ChannelHandler对象。</p>
+<h4 id="【ChannelPipeline】："><a href="#【ChannelPipeline】：" class="headerlink" title="【ChannelPipeline】："></a>【ChannelPipeline】：</h4><p>保存ChannelHandler的List，用于处理或拦截Channel的入站事件和出站操作</p>
+<p>ChannelPipeline实现了一种高级形式的拦截过滤器模式，是用户可以完全控制事件的处理方式，以及Channel中各个ChannelHandler如何相互相互。</p>
+<p>在Netty中每个Channel都有且仅有一个ChannelPipeline与之对应，他们的组成关系：</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/channel_pipeline.png" alt="channel_pipeline"></p>
+<p>一个Channel包含了一个ChannelPipeline，而ChannelPipeline中又维护一个由ChaennlHandlerContext组成的双向链表，并且每个ChannelHandlerContext中有关联着一个ChannelHandler。</p>
+<p>read事件(入站事件)和write事件(出站事件)在一个双向链表中，入站事件会从链表head往后传递到最后一个入站的handler，出站事件会从链表tail往前传递到最前一个出战的handler，两种类型的handler互不干扰</p>
+<h3 id="ByteBuf详解"><a href="#ByteBuf详解" class="headerlink" title="ByteBuf详解"></a>ByteBuf详解</h3><p>从结构上来说，ByteBuf有一串字节数组构成。数组中每个字节用来存放信息。</p>
+<p>ByteBuf提供了两个索引，一个用于读取数据，一个用于写入数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置</p>
+<p>当从ByteBuf读取时，它的readIndex(读索引)将会根据读取的字节递增。</p>
+<p>同样当写ByteBuf时，他的writeIndex也会根据写入的字节数进行递增。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/byte-buf.png" alt="ByteBuf"></p>
+<p>需要注意的是极限的情况是 readerIndex 刚好读到了 writerIndex 写入的地方。<br>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
+<blockquote>
+<p>已经读取的区域：[0,readerindex)</p>
+<p>可读取的区域：[readerindex,writerIndex)</p>
+<p> 可写的区域: [writerIndex,capacity)</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
+        <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>ApplicationContext启动过程</title>
     <url>/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/</url>
     <content><![CDATA[<h2 id="如何理解refresh-？"><a href="#如何理解refresh-？" class="headerlink" title="如何理解refresh()？"></a>如何理解refresh()？</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Load or refresh the persistent representation of the configuration,</span></span><br><span class="line"><span class="comment">   * which might an XML file, properties file, or relational database schema.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;As this is a startup method, it should destroy already created singletons</span></span><br><span class="line"><span class="comment">   * if it fails, to avoid dangling resources. In other words, after invocation</span></span><br><span class="line"><span class="comment">   * of that method, either all or no singletons at all should be instantiated.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> BeansException if the bean factory could not be initialized</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> IllegalStateException if already initialized and multiple refresh</span></span><br><span class="line"><span class="comment">   * attempts are not supported</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException</span>;</span><br></pre></td></tr></table></figure>
@@ -161,119 +274,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Netty核心功能与线程模型</title>
-    <url>/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
-    <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
-<a id="more"></a>
-
-<p>开发工作量和难度都非常大： 例如客户端面临断线重连、 网络闪断、心跳处理、半包读写、 网络拥塞和异常流的处理等等。</p>
-<p>Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装，解决了上述问题。且Netty拥有高性能、 吞吐量更高，延迟更低，减少资源消耗，最小化不必要的内存复制等优点。</p>
-<p>Netty框架的目标大概可以理解为让业务代码从网络基础应用编码中分离，让开发可以专注开发业务代码，而不用写一大堆类似NIO的网络处理操作。</p>
-<h3 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h3><h4 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h4><p>Reactor 是一种设计模式，<a href="https://en.wikipedia.org/wiki/Reactor_pattern">wikipedia</a> 对其定义如下：</p>
-<blockquote>
-<p>Reactor 是一个或多个输入事件的处理模式，用于处理并发传递给服务处理程序的服务请求。服务处理程序判断传入请求发生的事件，并将它们同步的分派给关联的请求处理程序。</p>
-</blockquote>
-<p>Reactor 模式按照职责不同，通常可以把线程分为 Reactor 线程、IO 线程和业务线程：</p>
-<ul>
-<li>Reactor 线程：轮询通知发生IO的通道，并分派合适的 Handler 处理</li>
-<li>IO 线程：执行实际的读写操作</li>
-<li>业务线程：执行应用程序的业务逻辑</li>
-</ul>
-<h5 id="单线程版本"><a href="#单线程版本" class="headerlink" title="单线程版本"></a>单线程版本</h5><p>单线程版本其实就是用一个线程完成事件的通知，实际的I/O操作和业务处理</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png" alt="basic"></p>
-<p><strong>缺点</strong></p>
-<p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
-<h5 id="多线程版本"><a href="#多线程版本" class="headerlink" title="多线程版本"></a>多线程版本</h5><p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png" alt="multithreaded"></p>
-<p><strong>缺点</strong></p>
-<p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
-<h5 id="主从版本"><a href="#主从版本" class="headerlink" title="主从版本"></a>主从版本</h5><p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png" alt="master-slave"></p>
-<h4 id="Netty线程模型-1"><a href="#Netty线程模型-1" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h4><p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png" alt="netty"></p>
-<p><strong>模型解释</strong></p>
-<ol>
-<li>Netty抽象出两组线程池BossGroup和WorkerGroup，BossGroup专门负责接收客户端的连接，WorkGroup专门负责网络的读写</li>
-<li>BossGroup和WorkGroup都是NioEventLoopGroup</li>
-<li>NioEventLoopGroup相当于一个事件循环线程组，这个组中含有多个事件循环线程，每一个事件循环线程是NioEventLoop</li>
-<li>每个NioEventLoop都有一个selector，用于监听注册在其上的socketChannel的网络通讯</li>
-<li>每个Boss NioEventLoop线程内部循环执行的步骤<ul>
-<li>处理accept事件，与client建立连接，生成NioSocketChannel</li>
-<li>将NioSocketChannel注册到某个worker NioEventLoop上的selector</li>
-<li>处理任务队列的任务，即runAllTask</li>
-</ul>
-</li>
-<li>每个worker NioEventLoop处理NioSocketChannel业务时，会使用pipeline(管道)，管道中维护了很多handler处理器用来处理channel中的数据</li>
-</ol>
-<h3 id="Netty模块组件"><a href="#Netty模块组件" class="headerlink" title="Netty模块组件"></a>Netty模块组件</h3><h4 id="【Bootstrap、ServerBootStrap】："><a href="#【Bootstrap、ServerBootStrap】：" class="headerlink" title="【Bootstrap、ServerBootStrap】："></a>【Bootstrap、ServerBootStrap】：</h4><p>Bootstrap意思是引导，一个Netty应用通用由一个Bootstrap开始，主要作用是配置整个Netty程序，串联各个组件，Netty中Bootstrap类是客户端程序的启动引导类，ServerBootStrap是服务端的启动引导类</p>
-<h4 id="【Future、ChannelFuture】："><a href="#【Future、ChannelFuture】：" class="headerlink" title="【Future、ChannelFuture】："></a>【Future、ChannelFuture】：</h4><p>正如前面介绍,在Netty中所有的IO操作都是异步的，不能立刻得知消息是否被正确处理。</p>
-<p>但是可以过一会等他执行完成或者直接注册一个监听，具体的实现就是通过Future和ChannelFuture，他们可以注册一个监听，当操作执行完成或失败时监听会自动触发注册的监听事件。</p>
-<h4 id="【Channel】："><a href="#【Channel】：" class="headerlink" title="【Channel】："></a>【Channel】：</h4><p>Netty网络通信的组件，能够用于执行网络的I/O操作。Channel为用户提供：</p>
-<ol>
-<li><p>当前网络连接的通道的状态（例如是否打开？是否已连接）</p>
-</li>
-<li><p>网络连接的参数配置（例如接收缓冲区的大小）</p>
-</li>
-<li><p>提供异步的网络I/O操作（如建立连接，读写，绑定端口），异步调用意味着任何I/O调用都将立即返回，并且不保证在调用结束时所请求的I/O操作已完成。</p>
-</li>
-<li><p>调用立即返回一个ChannelFuture实例，通过注册监听器到ChannelFuture上，可以在I/O操作成功、失败或者取消时回调通知调用方。</p>
-</li>
-<li><p>支持关联I/O操作与对应的处理程序</p>
-<p>不同协议、不同的阻塞类型的连接都有不同的Chennle类型与之对应。</p>
-<p>下面是一些常用的Channel类型：</p>
-<blockquote>
-<p>NioSocketChannel，异步的客户端 TCP Socket 连接。</p>
-<p>NioServerSocketChannel，异步的服务器端 TCP Socket 连接。</p>
-<p>NioDatagramChannel，异步的 UDP 连接。</p>
-<p>NioSctpChannel，异步的客户端 Sctp 连接。</p>
-<p>NioSctpServerChannel，异步的 Sctp 服务器端连接。这些通道涵盖了 UDP 和 TCP 网络 IO 以及文件 IO。</p>
-</blockquote>
-</li>
-</ol>
-<h4 id="【Selector】"><a href="#【Selector】" class="headerlink" title="【Selector】:"></a>【Selector】:</h4><p>Netty基于Selector对象实现I/O多路复用，通过Selector一个线程可以监听多个连接的Channel事件。当向一个Selector中注册Channel后，Selector内部的机制就可以自动不断地查询(Select)这些注册的Channel是否有已就绪的I/O事件（例如可读，可写，网络连接完成等），这样程序就可以很简单的使用一个线程高效的管理多个Channel</p>
-<h4 id="【NioEventLoop】："><a href="#【NioEventLoop】：" class="headerlink" title="【NioEventLoop】："></a>【NioEventLoop】：</h4><p>NioEventLoop中维护了一个线程和任务队列，支持异步提交执行任务，线程启动时会调用NioEventLoop的run方法，执行I/O任务和非I/O任务：</p>
-<ul>
-<li>I/O任务，即selectionKey中ready的事件，如accept、connect、read、write等，由processsSelectedKeys方法触发。</li>
-<li>非I/O任务，添加到taskQueue中的任务，如register(),bind()等任务，有runAllTasks方法触发</li>
-</ul>
-<h4 id="【NioEventLoopGroup】："><a href="#【NioEventLoopGroup】：" class="headerlink" title="【NioEventLoopGroup】："></a>【NioEventLoopGroup】：</h4><p>NioEventLoopGroup，主要管理eventLoop的生命周期，可以理解为一个线程池，内部维护了一组线程，每个线程（NioEventLoop）负责处理多个Channel上的事件，而一个Channel只对应于一个线程。</p>
-<h4 id="【ChannelHandler】："><a href="#【ChannelHandler】：" class="headerlink" title="【ChannelHandler】："></a>【ChannelHandler】：</h4><p>ChannelHandler是一个接口，处理I/O事件或拦截I/O操作，并将其转发到其ChannelPipeline(业务处理链)中的下一个处理程序。</p>
-<p>ChanneHandler本身并没有提供很多方法，因为这个接口有许多的方法需要实现，方便使用期间，可以继承他的子类：</p>
-<blockquote>
-<p>ChannelInboundHandler 用于处理入站 I/O 事件。</p>
-<p>ChannelOutboundHandler 用于处理出站 I/O 操作。</p>
-</blockquote>
-<p>或者使用一下适配器类：</p>
-<blockquote>
-<p>ChannelInboundHandlerAdapter 用于处理入站 I/O 事件。</p>
-<p>ChannelOutboundHandlerAdapter 用于处理出站 I/O 操作。</p>
-</blockquote>
-<h4 id="【ChannelHandlerContext】："><a href="#【ChannelHandlerContext】：" class="headerlink" title="【ChannelHandlerContext】："></a>【ChannelHandlerContext】：</h4><p>保存Channel相关的所有上下文信息，同时关联一个ChannelHandler对象。</p>
-<h4 id="【ChannelPipeline】："><a href="#【ChannelPipeline】：" class="headerlink" title="【ChannelPipeline】："></a>【ChannelPipeline】：</h4><p>保存ChannelHandler的List，用于处理或拦截Channel的入站事件和出站操作</p>
-<p>ChannelPipeline实现了一种高级形式的拦截过滤器模式，是用户可以完全控制事件的处理方式，以及Channel中各个ChannelHandler如何相互相互。</p>
-<p>在Netty中每个Channel都有且仅有一个ChannelPipeline与之对应，他们的组成关系：</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/channel_pipeline.png" alt="channel_pipeline"></p>
-<p>一个Channel包含了一个ChannelPipeline，而ChannelPipeline中又维护一个由ChaennlHandlerContext组成的双向链表，并且每个ChannelHandlerContext中有关联着一个ChannelHandler。</p>
-<p>read事件(入站事件)和write事件(出站事件)在一个双向链表中，入站事件会从链表head往后传递到最后一个入站的handler，出站事件会从链表tail往前传递到最前一个出战的handler，两种类型的handler互不干扰</p>
-<h3 id="ByteBuf详解"><a href="#ByteBuf详解" class="headerlink" title="ByteBuf详解"></a>ByteBuf详解</h3><p>从结构上来说，ByteBuf有一串字节数组构成。数组中每个字节用来存放信息。</p>
-<p>ByteBuf提供了两个索引，一个用于读取数据，一个用于写入数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置</p>
-<p>当从ByteBuf读取时，它的readIndex(读索引)将会根据读取的字节递增。</p>
-<p>同样当写ByteBuf时，他的writeIndex也会根据写入的字节数进行递增。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/byte-buf.png" alt="ByteBuf"></p>
-<p>需要注意的是极限的情况是 readerIndex 刚好读到了 writerIndex 写入的地方。<br>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
-<blockquote>
-<p>已经读取的区域：[0,readerindex)</p>
-<p>可读取的区域：[readerindex,writerIndex)</p>
-<p> 可写的区域: [writerIndex,capacity)</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>分布式框架</category>
-      </categories>
-      <tags>
-        <tag>netty</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Netty核心源码解析</title>
     <url>/2021/02/13/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
     <content><![CDATA[<h3 id="Netty高并发高性能架构设计精髓"><a href="#Netty高并发高性能架构设计精髓" class="headerlink" title="Netty高并发高性能架构设计精髓"></a>Netty高并发高性能架构设计精髓</h3><ul>
@@ -387,6 +387,99 @@
       </categories>
       <tags>
         <tag>netty</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring中Bean的生命周期</title>
+    <url>/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
+    <content><![CDATA[<p>Spring最重要的功能就是帮助程序员创建对象（也就是IOC），而启动Spring就是为创建Bean对象做准备，所以我们先明白Spring到底是则呢怎么去创建Bean的，也就是先弄明白Bean的生命周期。</p>
+<p>Bean的生命周期就是指：<strong>在Spring中，一个Bean是如何生成的，如何销毁的？</strong></p>
+<a id="more"></a>
+
+<p><img src="/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/Bean%E7%9A%84%E7%94%9F%E6%88%90%E8%BF%87%E7%A8%8B.jpg" alt="Bean的生命周期"></p>
+<h2 id="Bean的生成过程"><a href="#Bean的生成过程" class="headerlink" title="Bean的生成过程"></a>Bean的生成过程</h2><h3 id="1-生成BeanDefinition"><a href="#1-生成BeanDefinition" class="headerlink" title="1.生成BeanDefinition"></a>1.生成BeanDefinition</h3><p>Spring启动的时候会进行扫描，会先调用</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br></pre></td></tr></table></figure>
+<p>拿到所指定的包路径下的所有文件资源（******.class文件）</p>
+<p>然后会遍历每个Resource，为每个Resource生成一个MetadataReader对象，这个对象拥有三个功能：</p>
+<ol>
+<li>获取对应的Resource资源</li>
+<li>获取Resource对应的class元数据信息，包括类的名字，是不是接口、是不是一个注解、是不是抽象类、有没有父类，父类的名字，所实现的所有接口的名字，内部类的类名等等</li>
+<li>获取Resource对应的class上的注解信息，当前类上有哪些注解，当前类中有哪些方法上有注解</li>
+</ol>
+<p>在生成MetadataReader对象时，会利用<strong>ASM</strong>技术解析class文件，得到类的元数据集信息合注解信息，在这个过程中也会利用ClassLoader去加载注解类（<strong>ClassUtils.getDefaultClassLoader()所获得的类加载器</strong>），但是不会加载本类。</p>
+<p>有了MetadataReader对象，就相当于有了当前类的所有信息，但是当前类并没有加载，也是可以理解的，真正在用到这个类的时候才加载。</p>
+<p>然后利用MetadataReader对象生成一个ScannedGenericBeanDefinition对象，<strong>注意此时的BeanDefinition对象中的beanClass属性存储的是当前类的名字，而不是class对象</strong>。（beanClass属性的类型是Object，它即可以存储类的名字，也可以存储class对象）</p>
+<h3 id="2-合并BeanDefinition"><a href="#2-合并BeanDefinition" class="headerlink" title="2.合并BeanDefinition"></a>2.合并BeanDefinition</h3><p>如果某个BeanDefinition存在父BeanDefinition，那么则要进行合并，递归到往上找到父类，用父类的BeanDefinition新建一个RootBeanDefinition，再用子类的属性覆盖父类的属性。（ 在这个过程中，父类和子类存放在beanDefinitionMap当中的BeanDefinition其实是没有改变的，而是新生成了一个RootBeanDefinition存放在了mergedBeanDefinitions这个map里）</p>
+<h3 id="3-加载类"><a href="#3-加载类" class="headerlink" title="3. 加载类"></a>3. 加载类</h3><p>有了BeanDefinition之后，后续就会基于BeanDefinition去创建Bean，而创建Bean就必须实例化对象，而实例化就必须先加载当前BeanDefinition所对应的class，在AbstractAutowireCapableBeanFactory类的createBean()方法中，一开始就会调用：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Class&lt;?&gt; resolvedClass = resolveBeanClass(mbd, beanName);</span><br></pre></td></tr></table></figure>
+
+
+<p>这行代码就是去加载类，该方法是这么实现的：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (mbd.hasBeanClass()) &#123;</span><br><span class="line">    <span class="keyword">return</span> mbd.getBeanClass();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> AccessController.doPrivileged((PrivilegedExceptionAction&lt;Class&lt;?&gt;&gt;) () -&gt;</span><br><span class="line">        doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> doResolveBeanClass(mbd, typesToMatch);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public boolean hasBeanClass() &#123;</span><br><span class="line">    return (this.beanClass instanceof Class);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果beanClass属性的类型是Class，那么就直接返回，如果不是，则会根据类名进行加载（doResolveBeanClass方法所做的事情）</p>
+<p>会利用BeanFactory所设置的类加载器来加载类，如果没有设置，则默认使用**ClassUtils.getDefaultClassLoader()**所返回的类加载器来加载。</p>
+<h4 id="ClassUtils-getDefaultClassLoader"><a href="#ClassUtils-getDefaultClassLoader" class="headerlink" title="ClassUtils.getDefaultClassLoader()"></a><strong>ClassUtils.getDefaultClassLoader()</strong></h4><ol>
+<li>优先获取当前线程中的ClassLoader</li>
+<li>如果为空，则获取加载ClassUtils类的类加载器（正常情况下，就是AppClassLoader，但是如果是在Tomcat中运行，那么则会是Tomcat中为每个应用所创建的WebappClassLoader）</li>
+<li>如果为空，那么则是bootstrap类加载器加载的ClassUtils类，那则获取系统类加载器进行加载</li>
+</ol>
+<h3 id="4-实例化前"><a href="#4-实例化前" class="headerlink" title="4. 实例化前"></a>4. 实例化前</h3><p>允许第三方可以不按照Spring的正常流程来创建一个Bean。</p>
+<p>可以利用InstantiationAwareBeanPostProcessor的postProcessBeforeInstantiation方法来提前返回一个Bean对象，得到对象后会直接</p>
+<p>跳到进行<strong>Bean初始化</strong>的方法，然后直接结束Bean的生命周期</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">applyBeanPostProcessorsBeforeInstantiation</span><span class="params">(Class&lt;?&gt; beanClass, String beanName)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">      <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">         InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">         Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);</span><br><span class="line">         <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="5-推断构造方法"><a href="#5-推断构造方法" class="headerlink" title="5. 推断构造方法"></a>5. 推断构造方法</h3><p>选择一个合适的构造器用来创建实例对象</p>
+<h3 id="6-实例化"><a href="#6-实例化" class="headerlink" title="6. 实例化"></a>6. 实例化</h3><p>构造方法反射得到一个实例</p>
+<h3 id="7-BeanDefinition的后置处理"><a href="#7-BeanDefinition的后置处理" class="headerlink" title="7. BeanDefinition的后置处理"></a>7. BeanDefinition的后置处理</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">        MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;</span><br><span class="line">        bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里可以处理BeanDefinition，但是此时实例对象已经生成好了，所以修改beanClass已经没用了，但是可以修改PropertyValues，比如：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LubanMergedBeanDefinitionPostProcessor</span> <span class="keyword">implements</span> <span class="title">MergedBeanDefinitionPostProcessor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessMergedBeanDefinition</span><span class="params">(RootBeanDefinition beanDefinition, Class&lt;?&gt; beanType, String beanName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (beanName.equals(<span class="string">&quot;userService&quot;</span>)) &#123;</span><br><span class="line">            <span class="comment">//实例对象已经生成，此时变更没有意义</span></span><br><span class="line">            beanDefinition.setBeanClass(User.class); </span><br><span class="line">            beanDefinition.getPropertyValues().add(<span class="string">&quot;name&quot;</span>,<span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="8-实例化后（填充属性前）"><a href="#8-实例化后（填充属性前）" class="headerlink" title="8. 实例化后（填充属性前）"></a>8. 实例化后（填充属性前）</h3><p>可以自己写一个InstantiationAwareBeanPostProcessor，然后重写postProcessAfterInstantiation方法返回false,那么则不会进行属性填充</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">      <span class="keyword">if</span> (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) &#123;</span><br><span class="line">         <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="9-填充属性"><a href="#9-填充属性" class="headerlink" title="9. 填充属性"></a>9. 填充属性</h3><p>使用Spring自带的Autowired，默认是关闭的(AUTOWIRE_NO)</p>
+<p>其实就是Spring自动的根据某个类中的set方法来找bean</p>
+<ul>
+<li>byName就是根据某个set方法所对应的属性名去找bean</li>
+<li>byType，就是根据某个set方法的参数类型去找bean</li>
+</ul>
+<h3 id="10-填充属性后"><a href="#10-填充属性后" class="headerlink" title="10. 填充属性后"></a>10. 填充属性后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 调用BeanPostProcessor分别解析@Autowired、@Resource、@Value，得到属性值</span></span><br><span class="line">      PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">         <span class="keyword">if</span> (filteredPds == <span class="keyword">null</span>) &#123;</span><br><span class="line">            filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);</span><br><span class="line">         &#125;</span><br><span class="line">         pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);</span><br><span class="line">         <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      pvs = pvsToUse;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>@Autowired注解的 AutowiredAnnotationBeanPostProcessor</p>
+<p>@Resource注解的 CommonAnnotationBeanPostProcessor</p>
+</blockquote>
+<h3 id="11-执行Aware"><a href="#11-执行Aware" class="headerlink" title="11. 执行Aware"></a>11. 执行Aware</h3><ol>
+<li>((BeanNameAware) bean).setBeanName(beanName);</li>
+<li>((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);</li>
+<li>((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.<strong>this</strong>);</li>
+</ol>
+<h3 id="12-初始化前"><a href="#12-初始化前" class="headerlink" title="12. 初始化前"></a>12. 初始化前</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessBeforeInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="13-初始化"><a href="#13-初始化" class="headerlink" title="13. 初始化"></a>13. 初始化</h3><ol>
+<li>((InitializingBean) bean).afterPropertiesSet();</li>
+<li>执行BeanDefinition中指定的初始化方法</li>
+</ol>
+<h3 id="14-初始化后"><a href="#14-初始化后" class="headerlink" title="14. 初始化后"></a>14. 初始化后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessAfterInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="Bean的销毁过程"><a href="#Bean的销毁过程" class="headerlink" title="Bean的销毁过程"></a>Bean的销毁过程</h2><h3 id="1-容器关闭"><a href="#1-容器关闭" class="headerlink" title="1. 容器关闭"></a>1. 容器关闭</h3><h3 id="2-发布ContextClosedEvent事件"><a href="#2-发布ContextClosedEvent事件" class="headerlink" title="2. 发布ContextClosedEvent事件"></a>2. 发布ContextClosedEvent事件</h3><h3 id="3-调用LifecycleProcessor的onClose方法"><a href="#3-调用LifecycleProcessor的onClose方法" class="headerlink" title="3. 调用LifecycleProcessor的onClose方法"></a>3. 调用LifecycleProcessor的onClose方法</h3><h3 id="4-销毁单例Bean"><a href="#4-销毁单例Bean" class="headerlink" title="4. 销毁单例Bean"></a>4. 销毁单例Bean</h3><ol>
+<li>找出所有DisposableBean(实现了DisposableBean接口的Bean)</li>
+<li>遍历每个DisposableBean</li>
+<li>找出依赖了当前DisposableBean的其他Bean，将这些Bean从单例池中移除掉</li>
+<li>调用DisposableBean的destroy()方法</li>
+<li>找到当前DisposableBean所包含的inner beans，将这些Bean从单例池中移除掉 </li>
+</ol>
+<p>这里涉及到一个设计模式：<strong>适配器模式</strong></p>
+<p>在销毁时，Spring会找出实现了DisposableBean接口的Bean。</p>
+<p>但是我们在定义一个Bean时，如果这个Bean实现了DisposableBean接口，或者实现了AutoCloseable接口，或者在BeanDefinition中指定了destroyMethodName，那么这个Bean都属于“DisposableBean”，这些Bean在容器关闭时都要调用相应的销毁方法。</p>
+<p>所以，这里就需要进行适配，将实现了DisposableBean接口、或者AutoCloseable接口等适配成实现了DisposableBean接口，所以就用到了DisposableBeanAdapter，会把实现了AutoCloseable接口的类封装成DisposableBeanAdapter，而DisposableBeanAdapter实现了DisposableBean接口。</p>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
       </tags>
   </entry>
   <entry>
@@ -520,126 +613,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Spring中Bean的生命周期</title>
-    <url>/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
-    <content><![CDATA[<p>Spring最重要的功能就是帮助程序员创建对象（也就是IOC），而启动Spring就是为创建Bean对象做准备，所以我们先明白Spring到底是则呢怎么去创建Bean的，也就是先弄明白Bean的生命周期。</p>
-<p>Bean的生命周期就是指：<strong>在Spring中，一个Bean是如何生成的，如何销毁的？</strong></p>
-<a id="more"></a>
-
-<p><img src="/2021/05/30/Spring%E4%B8%ADBean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/Bean%E7%9A%84%E7%94%9F%E6%88%90%E8%BF%87%E7%A8%8B.jpg" alt="Bean的生命周期"></p>
-<h2 id="Bean的生成过程"><a href="#Bean的生成过程" class="headerlink" title="Bean的生成过程"></a>Bean的生成过程</h2><h3 id="1-生成BeanDefinition"><a href="#1-生成BeanDefinition" class="headerlink" title="1.生成BeanDefinition"></a>1.生成BeanDefinition</h3><p>Spring启动的时候会进行扫描，会先调用</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br></pre></td></tr></table></figure>
-<p>拿到所指定的包路径下的所有文件资源（******.class文件）</p>
-<p>然后会遍历每个Resource，为每个Resource生成一个MetadataReader对象，这个对象拥有三个功能：</p>
-<ol>
-<li>获取对应的Resource资源</li>
-<li>获取Resource对应的class元数据信息，包括类的名字，是不是接口、是不是一个注解、是不是抽象类、有没有父类，父类的名字，所实现的所有接口的名字，内部类的类名等等</li>
-<li>获取Resource对应的class上的注解信息，当前类上有哪些注解，当前类中有哪些方法上有注解</li>
-</ol>
-<p>在生成MetadataReader对象时，会利用<strong>ASM</strong>技术解析class文件，得到类的元数据集信息合注解信息，在这个过程中也会利用ClassLoader去加载注解类（<strong>ClassUtils.getDefaultClassLoader()所获得的类加载器</strong>），但是不会加载本类。</p>
-<p>有了MetadataReader对象，就相当于有了当前类的所有信息，但是当前类并没有加载，也是可以理解的，真正在用到这个类的时候才加载。</p>
-<p>然后利用MetadataReader对象生成一个ScannedGenericBeanDefinition对象，<strong>注意此时的BeanDefinition对象中的beanClass属性存储的是当前类的名字，而不是class对象</strong>。（beanClass属性的类型是Object，它即可以存储类的名字，也可以存储class对象）</p>
-<h3 id="2-合并BeanDefinition"><a href="#2-合并BeanDefinition" class="headerlink" title="2.合并BeanDefinition"></a>2.合并BeanDefinition</h3><p>如果某个BeanDefinition存在父BeanDefinition，那么则要进行合并，递归到往上找到父类，用父类的BeanDefinition新建一个RootBeanDefinition，再用子类的属性覆盖父类的属性。（ 在这个过程中，父类和子类存放在beanDefinitionMap当中的BeanDefinition其实是没有改变的，而是新生成了一个RootBeanDefinition存放在了mergedBeanDefinitions这个map里）</p>
-<h3 id="3-加载类"><a href="#3-加载类" class="headerlink" title="3. 加载类"></a>3. 加载类</h3><p>有了BeanDefinition之后，后续就会基于BeanDefinition去创建Bean，而创建Bean就必须实例化对象，而实例化就必须先加载当前BeanDefinition所对应的class，在AbstractAutowireCapableBeanFactory类的createBean()方法中，一开始就会调用：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Class&lt;?&gt; resolvedClass = resolveBeanClass(mbd, beanName);</span><br></pre></td></tr></table></figure>
-
-
-<p>这行代码就是去加载类，该方法是这么实现的：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (mbd.hasBeanClass()) &#123;</span><br><span class="line">    <span class="keyword">return</span> mbd.getBeanClass();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> AccessController.doPrivileged((PrivilegedExceptionAction&lt;Class&lt;?&gt;&gt;) () -&gt;</span><br><span class="line">        doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> doResolveBeanClass(mbd, typesToMatch);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public boolean hasBeanClass() &#123;</span><br><span class="line">    return (this.beanClass instanceof Class);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果beanClass属性的类型是Class，那么就直接返回，如果不是，则会根据类名进行加载（doResolveBeanClass方法所做的事情）</p>
-<p>会利用BeanFactory所设置的类加载器来加载类，如果没有设置，则默认使用**ClassUtils.getDefaultClassLoader()**所返回的类加载器来加载。</p>
-<h4 id="ClassUtils-getDefaultClassLoader"><a href="#ClassUtils-getDefaultClassLoader" class="headerlink" title="ClassUtils.getDefaultClassLoader()"></a><strong>ClassUtils.getDefaultClassLoader()</strong></h4><ol>
-<li>优先获取当前线程中的ClassLoader</li>
-<li>如果为空，则获取加载ClassUtils类的类加载器（正常情况下，就是AppClassLoader，但是如果是在Tomcat中运行，那么则会是Tomcat中为每个应用所创建的WebappClassLoader）</li>
-<li>如果为空，那么则是bootstrap类加载器加载的ClassUtils类，那则获取系统类加载器进行加载</li>
-</ol>
-<h3 id="4-实例化前"><a href="#4-实例化前" class="headerlink" title="4. 实例化前"></a>4. 实例化前</h3><p>允许第三方可以不按照Spring的正常流程来创建一个Bean。</p>
-<p>可以利用InstantiationAwareBeanPostProcessor的postProcessBeforeInstantiation方法来提前返回一个Bean对象，得到对象后会直接</p>
-<p>跳到进行<strong>Bean初始化</strong>的方法，然后直接结束Bean的生命周期</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">applyBeanPostProcessorsBeforeInstantiation</span><span class="params">(Class&lt;?&gt; beanClass, String beanName)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">      <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">         InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">         Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);</span><br><span class="line">         <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="5-推断构造方法"><a href="#5-推断构造方法" class="headerlink" title="5. 推断构造方法"></a>5. 推断构造方法</h3><p>选择一个合适的构造器用来创建实例对象</p>
-<h3 id="6-实例化"><a href="#6-实例化" class="headerlink" title="6. 实例化"></a>6. 实例化</h3><p>构造方法反射得到一个实例</p>
-<h3 id="7-BeanDefinition的后置处理"><a href="#7-BeanDefinition的后置处理" class="headerlink" title="7. BeanDefinition的后置处理"></a>7. BeanDefinition的后置处理</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">        MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;</span><br><span class="line">        bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里可以处理BeanDefinition，但是此时实例对象已经生成好了，所以修改beanClass已经没用了，但是可以修改PropertyValues，比如：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LubanMergedBeanDefinitionPostProcessor</span> <span class="keyword">implements</span> <span class="title">MergedBeanDefinitionPostProcessor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessMergedBeanDefinition</span><span class="params">(RootBeanDefinition beanDefinition, Class&lt;?&gt; beanType, String beanName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (beanName.equals(<span class="string">&quot;userService&quot;</span>)) &#123;</span><br><span class="line">            <span class="comment">//实例对象已经生成，此时变更没有意义</span></span><br><span class="line">            beanDefinition.setBeanClass(User.class); </span><br><span class="line">            beanDefinition.getPropertyValues().add(<span class="string">&quot;name&quot;</span>,<span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="8-实例化后（填充属性前）"><a href="#8-实例化后（填充属性前）" class="headerlink" title="8. 实例化后（填充属性前）"></a>8. 实例化后（填充属性前）</h3><p>可以自己写一个InstantiationAwareBeanPostProcessor，然后重写postProcessAfterInstantiation方法返回false,那么则不会进行属性填充</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">      <span class="keyword">if</span> (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) &#123;</span><br><span class="line">         <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="9-填充属性"><a href="#9-填充属性" class="headerlink" title="9. 填充属性"></a>9. 填充属性</h3><p>使用Spring自带的Autowired，默认是关闭的(AUTOWIRE_NO)</p>
-<p>其实就是Spring自动的根据某个类中的set方法来找bean</p>
-<ul>
-<li>byName就是根据某个set方法所对应的属性名去找bean</li>
-<li>byType，就是根据某个set方法的参数类型去找bean</li>
-</ul>
-<h3 id="10-填充属性后"><a href="#10-填充属性后" class="headerlink" title="10. 填充属性后"></a>10. 填充属性后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">   <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">      InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 调用BeanPostProcessor分别解析@Autowired、@Resource、@Value，得到属性值</span></span><br><span class="line">      PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">         <span class="keyword">if</span> (filteredPds == <span class="keyword">null</span>) &#123;</span><br><span class="line">            filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);</span><br><span class="line">         &#125;</span><br><span class="line">         pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);</span><br><span class="line">         <span class="keyword">if</span> (pvsToUse == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      pvs = pvsToUse;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>@Autowired注解的 AutowiredAnnotationBeanPostProcessor</p>
-<p>@Resource注解的 CommonAnnotationBeanPostProcessor</p>
-</blockquote>
-<h3 id="11-执行Aware"><a href="#11-执行Aware" class="headerlink" title="11. 执行Aware"></a>11. 执行Aware</h3><ol>
-<li>((BeanNameAware) bean).setBeanName(beanName);</li>
-<li>((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);</li>
-<li>((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.<strong>this</strong>);</li>
-</ol>
-<h3 id="12-初始化前"><a href="#12-初始化前" class="headerlink" title="12. 初始化前"></a>12. 初始化前</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessBeforeInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="13-初始化"><a href="#13-初始化" class="headerlink" title="13. 初始化"></a>13. 初始化</h3><ol>
-<li>((InitializingBean) bean).afterPropertiesSet();</li>
-<li>执行BeanDefinition中指定的初始化方法</li>
-</ol>
-<h3 id="14-初始化后"><a href="#14-初始化后" class="headerlink" title="14. 初始化后"></a>14. 初始化后</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (BeanPostProcessor processor : getBeanPostProcessors()) &#123;</span><br><span class="line">    Object current = processor.postProcessAfterInitialization(result, beanName);</span><br><span class="line">    <span class="keyword">if</span> (current == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    result = current;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h2 id="Bean的销毁过程"><a href="#Bean的销毁过程" class="headerlink" title="Bean的销毁过程"></a>Bean的销毁过程</h2><h3 id="1-容器关闭"><a href="#1-容器关闭" class="headerlink" title="1. 容器关闭"></a>1. 容器关闭</h3><h3 id="2-发布ContextClosedEvent事件"><a href="#2-发布ContextClosedEvent事件" class="headerlink" title="2. 发布ContextClosedEvent事件"></a>2. 发布ContextClosedEvent事件</h3><h3 id="3-调用LifecycleProcessor的onClose方法"><a href="#3-调用LifecycleProcessor的onClose方法" class="headerlink" title="3. 调用LifecycleProcessor的onClose方法"></a>3. 调用LifecycleProcessor的onClose方法</h3><h3 id="4-销毁单例Bean"><a href="#4-销毁单例Bean" class="headerlink" title="4. 销毁单例Bean"></a>4. 销毁单例Bean</h3><ol>
-<li>找出所有DisposableBean(实现了DisposableBean接口的Bean)</li>
-<li>遍历每个DisposableBean</li>
-<li>找出依赖了当前DisposableBean的其他Bean，将这些Bean从单例池中移除掉</li>
-<li>调用DisposableBean的destroy()方法</li>
-<li>找到当前DisposableBean所包含的inner beans，将这些Bean从单例池中移除掉 </li>
-</ol>
-<p>这里涉及到一个设计模式：<strong>适配器模式</strong></p>
-<p>在销毁时，Spring会找出实现了DisposableBean接口的Bean。</p>
-<p>但是我们在定义一个Bean时，如果这个Bean实现了DisposableBean接口，或者实现了AutoCloseable接口，或者在BeanDefinition中指定了destroyMethodName，那么这个Bean都属于“DisposableBean”，这些Bean在容器关闭时都要调用相应的销毁方法。</p>
-<p>所以，这里就需要进行适配，将实现了DisposableBean接口、或者AutoCloseable接口等适配成实现了DisposableBean接口，所以就用到了DisposableBeanAdapter，会把实现了AutoCloseable接口的类封装成DisposableBeanAdapter，而DisposableBeanAdapter实现了DisposableBean接口。</p>
-]]></content>
-      <categories>
-        <category>框架源码</category>
-      </categories>
-      <tags>
-        <tag>spring</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Spring依赖注入源码</title>
-    <url>/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/</url>
-    <content><![CDATA[<p>上节讲了Spring中的自动注入(byName,byType)和@Autowired注解的工作原理以及源码分析，这一节我们来分析剩下的核心的方法：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function">Object <span class="title">resolveDependency</span><span class="params">(DependencyDescriptor descriptor, <span class="meta">@Nullable</span> String requestingBeanName,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="meta">@Nullable</span> Set&lt;String&gt; autowiredBeanNames, <span class="meta">@Nullable</span> TypeConverter typeConverter)</span> <span class="keyword">throws</span> BeansException</span>;</span><br></pre></td></tr></table></figure>
-<p>该方法表示，传入一个依赖描述（DependencyDescriptor），该方法会根据该依赖描述从BeanFactory中找出对应的唯一的一个Bean对象。</p>
-<a id="more"></a>
-
-<p>下面来分析一下<strong>DefaultListableBeanFactory</strong>中**resolveDependency()**方法的具体实现。</p>
-<p><img src="/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/resolveDependency%E6%B5%81%E7%A8%8B.jpg" alt="resolveDependency流程"></p>
-<h2 id="findAutowireCandidates-实现"><a href="#findAutowireCandidates-实现" class="headerlink" title="findAutowireCandidates()实现"></a>findAutowireCandidates()实现</h2><ol>
-<li>找出BeanFactory中类型为type的所有的Bean的名字，注意是名字，而不是Bean对象，因为我们可以根据BeanDefinition就能判断和当前type是不是匹配</li>
-<li>把resolvableDependencies中key为type的对象找出来并添加到result中</li>
-<li>遍历根据type找出的beanName，判断当前beanName对应的Bean是不是能够被自动注入</li>
-<li>先判断beanName对应的BeanDefinition中的autowireCandidate属性，如果为false，表示不能用来进行自动注入，如果为true则继续进行判断</li>
-<li>判断当前type是不是泛型，如果是泛型是会把容器中所有的beanName找出来的，如果是这种情况，那么在这一步中就要获取到泛型的真正类型，然后进行匹配，如果当前beanName和当前泛型对应的真实类型匹配，那么则继续判断</li>
-<li>如果当前DependencyDescriptor上存在@Qualifier注解，那么则要判断当前beanName上是否定义了Qualifier，并且是否和当前DependencyDescriptor上的Qualifier相等，相等则匹配</li>
-<li>经过上述验证之后，当前beanName才能成为一个可注入的，添加到result中</li>
-</ol>
-]]></content>
-      <categories>
-        <category>框架源码</category>
-      </categories>
-      <tags>
-        <tag>spring</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Spring依赖注入流程</title>
     <url>/2021/06/09/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B/</url>
     <content><![CDATA[<p><strong>Spring有几种依赖注入的方式</strong></p>
@@ -757,6 +730,133 @@
 <p>如果@Resource注解中指定了name属性，那么则只会根据name属性的值去找bean，如果找不到则报错</p>
 <p>如果@Resource注解没有指定name属性，那么会先判断当前注入点名字（属性名字或普通方法名字或者set方法后缀）是不是存在Bean，如果存在，则直接根据注入点名字取获取bean，如果不存在，则会走@Autowired注解的逻辑，会根据注入点类型去找Bean</p>
 <h4 id="核心流程-1"><a href="#核心流程-1" class="headerlink" title="核心流程"></a>核心流程</h4><p><img src="/2021/06/09/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B/Resource%E6%89%A7%E8%A1%8C%E6%B3%A8%E5%85%A5%E6%B5%81%E7%A8%8B.jpg" alt="Resource执行注入流程"></p>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring依赖注入源码</title>
+    <url>/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/</url>
+    <content><![CDATA[<p>上节讲了Spring中的自动注入(byName,byType)和@Autowired注解的工作原理以及源码分析，这一节我们来分析剩下的核心的方法：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function">Object <span class="title">resolveDependency</span><span class="params">(DependencyDescriptor descriptor, <span class="meta">@Nullable</span> String requestingBeanName,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="meta">@Nullable</span> Set&lt;String&gt; autowiredBeanNames, <span class="meta">@Nullable</span> TypeConverter typeConverter)</span> <span class="keyword">throws</span> BeansException</span>;</span><br></pre></td></tr></table></figure>
+<p>该方法表示，传入一个依赖描述（DependencyDescriptor），该方法会根据该依赖描述从BeanFactory中找出对应的唯一的一个Bean对象。</p>
+<a id="more"></a>
+
+<p>下面来分析一下<strong>DefaultListableBeanFactory</strong>中**resolveDependency()**方法的具体实现。</p>
+<p><img src="/2021/06/16/Spring%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81/resolveDependency%E6%B5%81%E7%A8%8B.jpg" alt="resolveDependency流程"></p>
+<h2 id="findAutowireCandidates-实现"><a href="#findAutowireCandidates-实现" class="headerlink" title="findAutowireCandidates()实现"></a>findAutowireCandidates()实现</h2><ol>
+<li>找出BeanFactory中类型为type的所有的Bean的名字，注意是名字，而不是Bean对象，因为我们可以根据BeanDefinition就能判断和当前type是不是匹配</li>
+<li>把resolvableDependencies中key为type的对象找出来并添加到result中</li>
+<li>遍历根据type找出的beanName，判断当前beanName对应的Bean是不是能够被自动注入</li>
+<li>先判断beanName对应的BeanDefinition中的autowireCandidate属性，如果为false，表示不能用来进行自动注入，如果为true则继续进行判断</li>
+<li>判断当前type是不是泛型，如果是泛型是会把容器中所有的beanName找出来的，如果是这种情况，那么在这一步中就要获取到泛型的真正类型，然后进行匹配，如果当前beanName和当前泛型对应的真实类型匹配，那么则继续判断</li>
+<li>如果当前DependencyDescriptor上存在@Qualifier注解，那么则要判断当前beanName上是否定义了Qualifier，并且是否和当前DependencyDescriptor上的Qualifier相等，相等则匹配</li>
+<li>经过上述验证之后，当前beanName才能成为一个可注入的，添加到result中</li>
+</ol>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring循环依赖源码解析</title>
+    <url>/2021/07/26/Spring%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
+    <content><![CDATA[<h2 id="什么是循环依赖"><a href="#什么是循环依赖" class="headerlink" title="什么是循环依赖"></a>什么是循环依赖</h2><p>很简单，就是对象A依赖了对象B，对象B依赖了对象A</p>
+<p>比如</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// A依赖了B</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> B b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// B依赖了A</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> A a;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>循环依赖是一个问题吗？</p>
+<a id="more"></a>
+
+<p>如果不考虑Spring，循环依赖其实不是一个问题，因为对象之间相互依赖是很正常的事情。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">A a = <span class="keyword">new</span> A();</span><br><span class="line">B b = <span class="keyword">new</span> B();</span><br><span class="line"></span><br><span class="line">a.b = b;</span><br><span class="line">b.a = a;</span><br></pre></td></tr></table></figure>
+<p>上面的代码A,B就循环依赖上了</p>
+<p>但是为什么在Spring中循环依赖是一个问题？</p>
+<p>因为，在Spring中，一个对象并不是简单new出来，而是会经过一系列的Bean的生命周期，就是因为Bean的生命周期所以才会出现循环依赖问题。当然，在Spring中出现循环依赖的场景很多，有些场景Spring自动帮我们解决了，而有的场景需要程序员来解决。</p>
+<p>要明白的Spring中的循环依赖，得先明白Spring中Bean的生命周期</p>
+<h3 id="Bean的生命周期"><a href="#Bean的生命周期" class="headerlink" title="Bean的生命周期"></a>Bean的生命周期</h3><p>Bean大概的生成步骤如下：</p>
+<ol>
+<li>Spring扫描class得到BeanDefinition</li>
+<li>根据得到的BeanDefinition去生成bean</li>
+<li>首先根据class推断构造方法</li>
+<li>根据推断出来的构造方法，反射，得到一个对象（暂时叫做原始对象）</li>
+<li>填充原始对象中的属性（依赖注入）</li>
+<li>如果原始对象中的某个方法被AOP了，那么则需要根据原始对象生成一个代理对象</li>
+<li>把最终生成的代理对象放入单例池（源码中叫做singletonObjects）中，下次getBean时就直接从单例池拿即可</li>
+</ol>
+<p>当然，其实对于Spring中的Bean生成过程，并不仅仅只有上面7步。</p>
+<p>可以发现，在Spring中，构造一个Bean，包括了new这个步骤（第4步构造方法反射）。</p>
+<p>得到一个原始对象后，Spring需要给对象中的属性进行依赖注入，那么这个注入过程是怎样的？</p>
+<p>比如上文说的A类，A类中存在一个B类的b属性，所以，当A类生成了一个原始对象之后，就会去给b属性去赋值，此时就会根据b属性的类型和属性名去BeanFactory中去获取B类所对应的单例bean。如果此时BeanFactory中存在B对应的Bean，那么直接拿来赋值给b属性；如果此时BeanFactory中不存在B对应的Bean，则需要生成一个B对应的Bean，然后赋值给b属性。</p>
+<p>问题就出现在第二种情况，如果此时B类在BeanFactory中还没有生成对应的Bean，那么就需要去生成，就会经过B的Bean的生命周期。</p>
+<p>那么在创建B类的Bean的过程中，如果B类中存在一个A类的a属性，那么在创建B的Bean的过程中就需要A类对应的Bean，但是，触发B类Bean的创建的条件是A类Bean在创建过程中的依赖注入，所以这里就出现了循环依赖：</p>
+<p>ABean创建–&gt;依赖了B属性–&gt;触发BBean创建—&gt;B依赖了A属性—&gt;需要ABean（但ABean还在创建过程中）</p>
+<p>从而导致ABean创建不出来，BBean也创建不出来。</p>
+<p>这是循环依赖的场景，但是上文说了，在Spring中，通过某些机制帮开发者解决了部分循环依赖的问题，这个机制就是<strong>三级缓存</strong>。</p>
+<h2 id="三级缓存"><a href="#三级缓存" class="headerlink" title="三级缓存"></a>三级缓存</h2><p>三级缓存是通用的叫法。</p>
+<p>一级缓存为：<strong>singletonObjects</strong></p>
+<p>二级缓存为：<strong>earlySingletonObjects</strong></p>
+<p>三级缓存为：<strong>singletonFactories</strong></p>
+<p><strong>先稍微解释一下这三个缓存的作用，后面详细分析：</strong></p>
+<ul>
+<li><strong>singletonObjects</strong>中缓存的是已经经历了完整生命周期的bean对象。</li>
+<li><strong>earlySingletonObjects</strong>比singletonObjects多了一个early，表示缓存的是早期的bean对象。早期是什么意思？表示Bean的生命周期还没走完就把这个Bean放入了earlySingletonObjects。</li>
+<li><strong>singletonFactories</strong>中缓存的是ObjectFactory，表示对象工厂，用来创建某个对象的。</li>
+</ul>
+<h2 id="解决循环依赖的思路分析"><a href="#解决循环依赖的思路分析" class="headerlink" title="解决循环依赖的思路分析"></a>解决循环依赖的思路分析</h2><p>由上文分析得到，之所有产生循环以来的原因是：A创建时–&gt;需要B–&gt;B创建时–&gt;需要A，从而产生了循环</p>
+<p><img src="/2021/07/26/Spring%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/circle.png" alt="circle"></p>
+<p>那么如何打破这个循环呢，加入中间人</p>
+<p><img src="/2021/07/26/Spring%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/mid-people.png" alt="mid-people"></p>
+<p>A的Bean在创建过程中，在进行依赖注入之前，先把A的原始Bean放入缓存（提早暴露，只要放到缓存了，其他Bean需要时就可以从缓存中拿了），放入缓存后，再进行依赖注入，此时A的Bean依赖了B的Bean，如果B的Bean不存在，则需要创建B的Bean，而创建B的Bean的过程和A一样，也是先创建一个B的原始对象，然后把B的原始对象提早暴露出来放入缓存中，然后在对B的原始对象进行依赖注入A，此时能从缓存中拿到A的原始对象（虽然是A的原始对象，还不是最终的Bean），B的原始对象依赖注入完了之后，B的生命周期结束，那么A的生命周期也能结束</p>
+<p>因为整个过程中，都只有一个A原始对象，所以对于B而言，就算在属性注入时，注入的是A原始对象，也没有关系，因为A原始对象在后续的生命周期中在堆中没有发生变化。</p>
+<p>从上面这个分析过程中可以得出，只需要一个缓存就能解决循环依赖了，那么为什么Spring中还需要<strong>singletonFactories</strong>呢？</p>
+<p>这是难点，基于上面的场景想一个问题：如果A的原始对象注入给B的属性之后，A的原始对象进行了AOP产生了一个代理对象，此时就会出现，对于A而言，它的Bean对象其实应该是AOP之后的代理对象，而B的a属性对应的并不是AOP之后的代理对象，这就产生了冲突。</p>
+<p><strong>B依赖的A和最终的A不是同一个对象</strong>。</p>
+<p>那么如何解决这个问题？这个问题可以说没有办法解决。</p>
+<p>因为在一个Bean的生命周期最后，Spring提供了BeanPostProcessor可以去对Bean进行加工，这个加工不仅仅只是能修改Bean的属性值，也可以替换掉当前Bean。</p>
+<p>举个例子：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">User</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LubanBeanPostProcessor</span> <span class="keyword">implements</span> <span class="title">BeanPostProcessor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">postProcessAfterInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 注意这里，生成了一个新的User对象</span></span><br><span class="line">        <span class="keyword">if</span> (beanName.equals(<span class="string">&quot;user&quot;</span>)) &#123;</span><br><span class="line">            System.out.println(bean);</span><br><span class="line">            User user = <span class="keyword">new</span> User();</span><br><span class="line">            <span class="keyword">return</span> user;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        AnnotationConfigApplicationContext context =</span><br><span class="line">                <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig.class);</span><br><span class="line">        </span><br><span class="line">        User user = context.getBean(<span class="string">&quot;user&quot;</span>, User.class);</span><br><span class="line">        System.out.println(user);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以在BeanPostProcessor中可以完全替换掉某个beanName对应的bean对象。</p>
+<p>而BeanPostProcessor的执行在Bean的生命周期中是处于属性注入之后的，循环依赖是发生在属性注入过程中的，所以很有可能导致，<strong>注入给B对象的A对象和经历过完整生命周期之后的A对象，不是一个对象</strong>。这就是有问题的。</p>
+<p><strong>所以在这种情况下的循环依赖，Spring是解决不了的，因为在属性注入时，Spring也不知道A对象后续会经过哪些BeanPostProcessor以及会对A对象做什么处理</strong>。</p>
+<h2 id="Spring到底解决了哪种情况下的循环依赖"><a href="#Spring到底解决了哪种情况下的循环依赖" class="headerlink" title="Spring到底解决了哪种情况下的循环依赖"></a>Spring到底解决了哪种情况下的循环依赖</h2><p>虽然上面的情况可能发生，但是肯定发生得很少，我们通常在开发过程中，不会这样去做，但是，某个beanName对应的最终对象和原始对象不是一个对象却会经常出现，这就是AOP。</p>
+<p>AOP就是通过一个BeanPostProcessor来实现的，这个BeanPostProcessor就是AnnotationAwareAspectJAutoProxyCreator，它的父类是AbstractAutoProxyCreator，而在Spring中AOP利用的要么是JDK动态代理，要么CGLib的动态代理，所以如果给一个类中的某个方法设置了切面，那么这个类最终就需要生成一个代理对象。</p>
+<p>一般过程就是：A类—&gt;生成一个普通对象–&gt;属性注入–&gt;基于切面生成一个代理对象–&gt;把代理对象放入singletonObjects单例池中。</p>
+<p>而AOP可以说是Spring中除开IOC的另外一大功能，而循环依赖又是属于IOC范畴的，所以这两大功能想要并存，Spring需要特殊处理。</p>
+<p>如何处理的，就是利用了第三级缓存<strong>singletonFactories</strong>。</p>
+<p>首先，singletonFactories中存的是某个beanName对应的ObjectFactory，在bean的生命周期中，生成完原始对象之后，就会构造一个ObjectFactory存入singletonFactories中。这个ObjectFactory是一个函数式接口，所以支持Lambda表达式：**() -&gt; getEarlyBeanReference(beanName, mbd, bean)**</p>
+<p>上面的Lambda表达式就是一个ObjectFactory，执行该Lambda表达式就会去执行getEarlyBeanReference方法，而该方法如下：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">getEarlyBeanReference</span><span class="params">(String beanName, RootBeanDefinition mbd, Object bean)</span> </span>&#123;</span><br><span class="line">    Object exposedObject = bean;</span><br><span class="line">    <span class="keyword">if</span> (!mbd.isSynthetic() &amp;&amp; hasInstantiationAwareBeanPostProcessors()) &#123;</span><br><span class="line">        <span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">            <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> SmartInstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">                SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">                exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> exposedObject;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该方法会去执行SmartInstantiationAwareBeanPostProcessor中的getEarlyBeanReference方法，而这个接口下的实现类中只有两个类实现了这个方法，一个是AbstractAutoProxyCreator，一个是InstantiationAwareBeanPostProcessorAdapter，它的实现如下：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// InstantiationAwareBeanPostProcessorAdapter</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getEarlyBeanReference</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> bean;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// AbstractAutoProxyCreator</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getEarlyBeanReference</span><span class="params">(Object bean, String beanName)</span> </span>&#123;</span><br><span class="line">    Object cacheKey = getCacheKey(bean.getClass(), beanName);</span><br><span class="line">    <span class="keyword">this</span>.earlyProxyReferences.put(cacheKey, bean);</span><br><span class="line">    <span class="keyword">return</span> wrapIfNecessary(bean, beanName, cacheKey);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以很明显，在整个Spring中，默认就只有AbstractAutoProxyCreator真正意义上实现了getEarlyBeanReference方法，而该类就是用来进行AOP的。上文提到的AnnotationAwareAspectJAutoProxyCreator的父类就是AbstractAutoProxyCreator。</p>
+<p>那么getEarlyBeanReference方法到底在干什么？</p>
+<p>首先得到一个cachekey，cachekey就是beanName。</p>
+<p>然后把beanName和bean（这是原始对象）存入earlyProxyReferences中</p>
+<p>调用wrapIfNecessary进行AOP，得到一个代理对象。</p>
+<p>那么，什么时候会调用getEarlyBeanReference方法呢？回到循环依赖的场景中</p>
+<p><img src="/2021/07/26/Spring%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/earlySingleObjects.png" alt="earlySingleObjects"></p>
+<p>从singletonFactories根据beanName得到一个ObjectFactory，然后执行ObjectFactory，也就是执行getEarlyBeanReference方法，此时会得到一个A原始对象经过AOP之后的代理对象，然后把该代理对象放入earlySingletonObjects中，注意此时并没有把代理对象放入singletonObjects中，那什么时候放入到singletonObjects中呢？</p>
+<p><strong>earlySingletonObjects的作用</strong></p>
+<p>我们这个时候得来理解一下earlySingletonObjects的作用，此时，我们只得到了A原始对象的代理对象，这个对象还不完整，因为A原始对象还没有进行属性填充，所以此时不能直接把A的代理对象放入singletonObjects中，所以只能把代理对象放入earlySingletonObjects，假设现在有其他对象依赖了A，那么则可以从earlySingletonObjects中得到A原始对象的代理对象了，并且是A的同一个代理对象。</p>
+<p>当B创建完了之后，A继续进行生命周期，而A在完成属性注入后，会按照它本身的逻辑去进行AOP，而此时我们知道A原始对象已经经历过了AOP，所以对于A本身而言，不会再去进行AOP了，那么怎么判断一个对象是否经历过了AOP呢？会利用上文提到的earlyProxyReferences，在AbstractAutoProxyCreator的postProcessAfterInitialization方法中，会去判断当前beanName是否在earlyProxyReferences，如果在则表示已经提前进行过AOP了，无需再次进行AOP。</p>
+<p>对于A而言，进行了AOP的判断后，以及BeanPostProcessor的执行之后，就需要把A对应的对象放入singletonObjects中了，但是我们知道，应该是要A的代理对象放入singletonObjects中，所以此时需要从earlySingletonObjects中得到代理对象，然后入singletonObjects中。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>至此，总结一下三级缓存：</p>
+<ol>
+<li><strong>singletonObjects</strong>：缓存某个beanName对应的经过了完整生命周期的bean</li>
+<li><strong>earlySingletonObjects</strong>：缓存提前通过原始对象进行了AOP之后得到的代理对象，原始对象还没有进行属性注入和后续的BeanPostProcessor等生命周期</li>
+<li><strong>singletonFactories</strong>：缓存的是一个ObjectFactory，也就是一个Lambda表达式。在创建一个Bean时，在每个Bean的生成过程中，都会提前暴露一个Lambda表达式，并保存到三级缓存中，这个Lambda表达式<strong>可能用到，也可能用不到</strong>，如果没有出现循环依赖依赖本bean，那么这个Lambda表达式无用，本bean按照自己的生命周期执行，执行完后直接把本bean放入singletonObjects中即可，如果出现了循环依赖依赖了本bean，则从三级缓存中获取Lambda表达式，并执行Lambda表达式得到一个AOP之后的代理对象(如果有AOP的话，如果无需AOP，则直接得到一个原始对象)，并把得到的对象放入二级缓存</li>
+<li>其实还要一个缓存，就是<strong>earlyProxyReferences</strong>，它用来记录某个原始对象是否进行过AOP了。</li>
+</ol>
 ]]></content>
       <categories>
         <category>框架源码</category>
@@ -1099,106 +1199,6 @@
         <tag>IO</tag>
         <tag>BIO</tag>
         <tag>NIO</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Spring循环依赖源码解析</title>
-    <url>/2021/07/26/Spring%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</url>
-    <content><![CDATA[<h2 id="什么是循环依赖"><a href="#什么是循环依赖" class="headerlink" title="什么是循环依赖"></a>什么是循环依赖</h2><p>很简单，就是对象A依赖了对象B，对象B依赖了对象A</p>
-<p>比如</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// A依赖了B</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> B b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// B依赖了A</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> A a;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>循环依赖是一个问题吗？</p>
-<a id="more"></a>
-
-<p>如果不考虑Spring，循环依赖其实不是一个问题，因为对象之间相互依赖是很正常的事情。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">A a = <span class="keyword">new</span> A();</span><br><span class="line">B b = <span class="keyword">new</span> B();</span><br><span class="line"></span><br><span class="line">a.b = b;</span><br><span class="line">b.a = a;</span><br></pre></td></tr></table></figure>
-<p>上面的代码A,B就循环依赖上了</p>
-<p>但是为什么在Spring中循环依赖是一个问题？</p>
-<p>因为，在Spring中，一个对象并不是简单new出来，而是会经过一系列的Bean的生命周期，就是因为Bean的生命周期所以才会出现循环依赖问题。当然，在Spring中出现循环依赖的场景很多，有些场景Spring自动帮我们解决了，而有的场景需要程序员来解决。</p>
-<p>要明白的Spring中的循环依赖，得先明白Spring中Bean的生命周期</p>
-<h3 id="Bean的生命周期"><a href="#Bean的生命周期" class="headerlink" title="Bean的生命周期"></a>Bean的生命周期</h3><p>Bean大概的生成步骤如下：</p>
-<ol>
-<li>Spring扫描class得到BeanDefinition</li>
-<li>根据得到的BeanDefinition去生成bean</li>
-<li>首先根据class推断构造方法</li>
-<li>根据推断出来的构造方法，反射，得到一个对象（暂时叫做原始对象）</li>
-<li>填充原始对象中的属性（依赖注入）</li>
-<li>如果原始对象中的某个方法被AOP了，那么则需要根据原始对象生成一个代理对象</li>
-<li>把最终生成的代理对象放入单例池（源码中叫做singletonObjects）中，下次getBean时就直接从单例池拿即可</li>
-</ol>
-<p>当然，其实对于Spring中的Bean生成过程，并不仅仅只有上面7步。</p>
-<p>可以发现，在Spring中，构造一个Bean，包括了new这个步骤（第4步构造方法反射）。</p>
-<p>得到一个原始对象后，Spring需要给对象中的属性进行依赖注入，那么这个注入过程是怎样的？</p>
-<p>比如上文说的A类，A类中存在一个B类的b属性，所以，当A类生成了一个原始对象之后，就会去给b属性去赋值，此时就会根据b属性的类型和属性名去BeanFactory中去获取B类所对应的单例bean。如果此时BeanFactory中存在B对应的Bean，那么直接拿来赋值给b属性；如果此时BeanFactory中不存在B对应的Bean，则需要生成一个B对应的Bean，然后赋值给b属性。</p>
-<p>问题就出现在第二种情况，如果此时B类在BeanFactory中还没有生成对应的Bean，那么就需要去生成，就会经过B的Bean的生命周期。</p>
-<p>那么在创建B类的Bean的过程中，如果B类中存在一个A类的a属性，那么在创建B的Bean的过程中就需要A类对应的Bean，但是，触发B类Bean的创建的条件是A类Bean在创建过程中的依赖注入，所以这里就出现了循环依赖：</p>
-<p>ABean创建–&gt;依赖了B属性–&gt;触发BBean创建—&gt;B依赖了A属性—&gt;需要ABean（但ABean还在创建过程中）</p>
-<p>从而导致ABean创建不出来，BBean也创建不出来。</p>
-<p>这是循环依赖的场景，但是上文说了，在Spring中，通过某些机制帮开发者解决了部分循环依赖的问题，这个机制就是<strong>三级缓存</strong>。</p>
-<h2 id="三级缓存"><a href="#三级缓存" class="headerlink" title="三级缓存"></a>三级缓存</h2><p>三级缓存是通用的叫法。</p>
-<p>一级缓存为：<strong>singletonObjects</strong></p>
-<p>二级缓存为：<strong>earlySingletonObjects</strong></p>
-<p>三级缓存为：<strong>singletonFactories</strong></p>
-<p><strong>先稍微解释一下这三个缓存的作用，后面详细分析：</strong></p>
-<ul>
-<li><strong>singletonObjects</strong>中缓存的是已经经历了完整生命周期的bean对象。</li>
-<li><strong>earlySingletonObjects</strong>比singletonObjects多了一个early，表示缓存的是早期的bean对象。早期是什么意思？表示Bean的生命周期还没走完就把这个Bean放入了earlySingletonObjects。</li>
-<li><strong>singletonFactories</strong>中缓存的是ObjectFactory，表示对象工厂，用来创建某个对象的。</li>
-</ul>
-<h2 id="解决循环依赖的思路分析"><a href="#解决循环依赖的思路分析" class="headerlink" title="解决循环依赖的思路分析"></a>解决循环依赖的思路分析</h2><p>由上文分析得到，之所有产生循环以来的原因是：A创建时–&gt;需要B–&gt;B创建时–&gt;需要A，从而产生了循环</p>
-<p><img src="/2021/07/26/Spring%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/circle.png" alt="circle"></p>
-<p>那么如何打破这个循环呢，加入中间人</p>
-<p><img src="/2021/07/26/Spring%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/mid-people.png" alt="mid-people"></p>
-<p>A的Bean在创建过程中，在进行依赖注入之前，先把A的原始Bean放入缓存（提早暴露，只要放到缓存了，其他Bean需要时就可以从缓存中拿了），放入缓存后，再进行依赖注入，此时A的Bean依赖了B的Bean，如果B的Bean不存在，则需要创建B的Bean，而创建B的Bean的过程和A一样，也是先创建一个B的原始对象，然后把B的原始对象提早暴露出来放入缓存中，然后在对B的原始对象进行依赖注入A，此时能从缓存中拿到A的原始对象（虽然是A的原始对象，还不是最终的Bean），B的原始对象依赖注入完了之后，B的生命周期结束，那么A的生命周期也能结束</p>
-<p>因为整个过程中，都只有一个A原始对象，所以对于B而言，就算在属性注入时，注入的是A原始对象，也没有关系，因为A原始对象在后续的生命周期中在堆中没有发生变化。</p>
-<p>从上面这个分析过程中可以得出，只需要一个缓存就能解决循环依赖了，那么为什么Spring中还需要<strong>singletonFactories</strong>呢？</p>
-<p>这是难点，基于上面的场景想一个问题：如果A的原始对象注入给B的属性之后，A的原始对象进行了AOP产生了一个代理对象，此时就会出现，对于A而言，它的Bean对象其实应该是AOP之后的代理对象，而B的a属性对应的并不是AOP之后的代理对象，这就产生了冲突。</p>
-<p><strong>B依赖的A和最终的A不是同一个对象</strong>。</p>
-<p>那么如何解决这个问题？这个问题可以说没有办法解决。</p>
-<p>因为在一个Bean的生命周期最后，Spring提供了BeanPostProcessor可以去对Bean进行加工，这个加工不仅仅只是能修改Bean的属性值，也可以替换掉当前Bean。</p>
-<p>举个例子：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">User</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LubanBeanPostProcessor</span> <span class="keyword">implements</span> <span class="title">BeanPostProcessor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">postProcessAfterInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 注意这里，生成了一个新的User对象</span></span><br><span class="line">        <span class="keyword">if</span> (beanName.equals(<span class="string">&quot;user&quot;</span>)) &#123;</span><br><span class="line">            System.out.println(bean);</span><br><span class="line">            User user = <span class="keyword">new</span> User();</span><br><span class="line">            <span class="keyword">return</span> user;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        AnnotationConfigApplicationContext context =</span><br><span class="line">                <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig.class);</span><br><span class="line">        </span><br><span class="line">        User user = context.getBean(<span class="string">&quot;user&quot;</span>, User.class);</span><br><span class="line">        System.out.println(user);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>所以在BeanPostProcessor中可以完全替换掉某个beanName对应的bean对象。</p>
-<p>而BeanPostProcessor的执行在Bean的生命周期中是处于属性注入之后的，循环依赖是发生在属性注入过程中的，所以很有可能导致，<strong>注入给B对象的A对象和经历过完整生命周期之后的A对象，不是一个对象</strong>。这就是有问题的。</p>
-<p><strong>所以在这种情况下的循环依赖，Spring是解决不了的，因为在属性注入时，Spring也不知道A对象后续会经过哪些BeanPostProcessor以及会对A对象做什么处理</strong>。</p>
-<h2 id="Spring到底解决了哪种情况下的循环依赖"><a href="#Spring到底解决了哪种情况下的循环依赖" class="headerlink" title="Spring到底解决了哪种情况下的循环依赖"></a>Spring到底解决了哪种情况下的循环依赖</h2><p>虽然上面的情况可能发生，但是肯定发生得很少，我们通常在开发过程中，不会这样去做，但是，某个beanName对应的最终对象和原始对象不是一个对象却会经常出现，这就是AOP。</p>
-<p>AOP就是通过一个BeanPostProcessor来实现的，这个BeanPostProcessor就是AnnotationAwareAspectJAutoProxyCreator，它的父类是AbstractAutoProxyCreator，而在Spring中AOP利用的要么是JDK动态代理，要么CGLib的动态代理，所以如果给一个类中的某个方法设置了切面，那么这个类最终就需要生成一个代理对象。</p>
-<p>一般过程就是：A类—&gt;生成一个普通对象–&gt;属性注入–&gt;基于切面生成一个代理对象–&gt;把代理对象放入singletonObjects单例池中。</p>
-<p>而AOP可以说是Spring中除开IOC的另外一大功能，而循环依赖又是属于IOC范畴的，所以这两大功能想要并存，Spring需要特殊处理。</p>
-<p>如何处理的，就是利用了第三级缓存<strong>singletonFactories</strong>。</p>
-<p>首先，singletonFactories中存的是某个beanName对应的ObjectFactory，在bean的生命周期中，生成完原始对象之后，就会构造一个ObjectFactory存入singletonFactories中。这个ObjectFactory是一个函数式接口，所以支持Lambda表达式：**() -&gt; getEarlyBeanReference(beanName, mbd, bean)**</p>
-<p>上面的Lambda表达式就是一个ObjectFactory，执行该Lambda表达式就会去执行getEarlyBeanReference方法，而该方法如下：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">getEarlyBeanReference</span><span class="params">(String beanName, RootBeanDefinition mbd, Object bean)</span> </span>&#123;</span><br><span class="line">    Object exposedObject = bean;</span><br><span class="line">    <span class="keyword">if</span> (!mbd.isSynthetic() &amp;&amp; hasInstantiationAwareBeanPostProcessors()) &#123;</span><br><span class="line">        <span class="keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;</span><br><span class="line">            <span class="keyword">if</span> (bp <span class="keyword">instanceof</span> SmartInstantiationAwareBeanPostProcessor) &#123;</span><br><span class="line">                SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;</span><br><span class="line">                exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> exposedObject;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>该方法会去执行SmartInstantiationAwareBeanPostProcessor中的getEarlyBeanReference方法，而这个接口下的实现类中只有两个类实现了这个方法，一个是AbstractAutoProxyCreator，一个是InstantiationAwareBeanPostProcessorAdapter，它的实现如下：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// InstantiationAwareBeanPostProcessorAdapter</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getEarlyBeanReference</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> bean;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// AbstractAutoProxyCreator</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getEarlyBeanReference</span><span class="params">(Object bean, String beanName)</span> </span>&#123;</span><br><span class="line">    Object cacheKey = getCacheKey(bean.getClass(), beanName);</span><br><span class="line">    <span class="keyword">this</span>.earlyProxyReferences.put(cacheKey, bean);</span><br><span class="line">    <span class="keyword">return</span> wrapIfNecessary(bean, beanName, cacheKey);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>所以很明显，在整个Spring中，默认就只有AbstractAutoProxyCreator真正意义上实现了getEarlyBeanReference方法，而该类就是用来进行AOP的。上文提到的AnnotationAwareAspectJAutoProxyCreator的父类就是AbstractAutoProxyCreator。</p>
-<p>那么getEarlyBeanReference方法到底在干什么？</p>
-<p>首先得到一个cachekey，cachekey就是beanName。</p>
-<p>然后把beanName和bean（这是原始对象）存入earlyProxyReferences中</p>
-<p>调用wrapIfNecessary进行AOP，得到一个代理对象。</p>
-<p>那么，什么时候会调用getEarlyBeanReference方法呢？回到循环依赖的场景中</p>
-<p><img src="/2021/07/26/Spring%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/earlySingleObjects.png" alt="earlySingleObjects"></p>
-<p>从singletonFactories根据beanName得到一个ObjectFactory，然后执行ObjectFactory，也就是执行getEarlyBeanReference方法，此时会得到一个A原始对象经过AOP之后的代理对象，然后把该代理对象放入earlySingletonObjects中，注意此时并没有把代理对象放入singletonObjects中，那什么时候放入到singletonObjects中呢？</p>
-<p><strong>earlySingletonObjects的作用</strong></p>
-<p>我们这个时候得来理解一下earlySingletonObjects的作用，此时，我们只得到了A原始对象的代理对象，这个对象还不完整，因为A原始对象还没有进行属性填充，所以此时不能直接把A的代理对象放入singletonObjects中，所以只能把代理对象放入earlySingletonObjects，假设现在有其他对象依赖了A，那么则可以从earlySingletonObjects中得到A原始对象的代理对象了，并且是A的同一个代理对象。</p>
-<p>当B创建完了之后，A继续进行生命周期，而A在完成属性注入后，会按照它本身的逻辑去进行AOP，而此时我们知道A原始对象已经经历过了AOP，所以对于A本身而言，不会再去进行AOP了，那么怎么判断一个对象是否经历过了AOP呢？会利用上文提到的earlyProxyReferences，在AbstractAutoProxyCreator的postProcessAfterInitialization方法中，会去判断当前beanName是否在earlyProxyReferences，如果在则表示已经提前进行过AOP了，无需再次进行AOP。</p>
-<p>对于A而言，进行了AOP的判断后，以及BeanPostProcessor的执行之后，就需要把A对应的对象放入singletonObjects中了，但是我们知道，应该是要A的代理对象放入singletonObjects中，所以此时需要从earlySingletonObjects中得到代理对象，然后入singletonObjects中。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>至此，总结一下三级缓存：</p>
-<ol>
-<li><strong>singletonObjects</strong>：缓存某个beanName对应的经过了完整生命周期的bean</li>
-<li><strong>earlySingletonObjects</strong>：缓存提前通过原始对象进行了AOP之后得到的代理对象，原始对象还没有进行属性注入和后续的BeanPostProcessor等生命周期</li>
-<li><strong>singletonFactories</strong>：缓存的是一个ObjectFactory，也就是一个Lambda表达式。在创建一个Bean时，在每个Bean的生成过程中，都会提前暴露一个Lambda表达式，并保存到三级缓存中，这个Lambda表达式<strong>可能用到，也可能用不到</strong>，如果没有出现循环依赖依赖本bean，那么这个Lambda表达式无用，本bean按照自己的生命周期执行，执行完后直接把本bean放入singletonObjects中即可，如果出现了循环依赖依赖了本bean，则从三级缓存中获取Lambda表达式，并执行Lambda表达式得到一个AOP之后的代理对象(如果有AOP的话，如果无需AOP，则直接得到一个原始对象)，并把得到的对象放入二级缓存</li>
-<li>其实还要一个缓存，就是<strong>earlyProxyReferences</strong>，它用来记录某个原始对象是否进行过AOP了。</li>
-</ol>
-]]></content>
-      <categories>
-        <category>框架源码</category>
-      </categories>
-      <tags>
-        <tag>spring</tag>
       </tags>
   </entry>
 </search>
