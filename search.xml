@@ -1,119 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Netty核心功能与线程模型</title>
-    <url>/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
-    <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
-<a id="more"></a>
-
-<p>开发工作量和难度都非常大： 例如客户端面临断线重连、 网络闪断、心跳处理、半包读写、 网络拥塞和异常流的处理等等。</p>
-<p>Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装，解决了上述问题。且Netty拥有高性能、 吞吐量更高，延迟更低，减少资源消耗，最小化不必要的内存复制等优点。</p>
-<p>Netty框架的目标大概可以理解为让业务代码从网络基础应用编码中分离，让开发可以专注开发业务代码，而不用写一大堆类似NIO的网络处理操作。</p>
-<h3 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h3><h4 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h4><p>Reactor 是一种设计模式，<a href="https://en.wikipedia.org/wiki/Reactor_pattern">wikipedia</a> 对其定义如下：</p>
-<blockquote>
-<p>Reactor 是一个或多个输入事件的处理模式，用于处理并发传递给服务处理程序的服务请求。服务处理程序判断传入请求发生的事件，并将它们同步的分派给关联的请求处理程序。</p>
-</blockquote>
-<p>Reactor 模式按照职责不同，通常可以把线程分为 Reactor 线程、IO 线程和业务线程：</p>
-<ul>
-<li>Reactor 线程：轮询通知发生IO的通道，并分派合适的 Handler 处理</li>
-<li>IO 线程：执行实际的读写操作</li>
-<li>业务线程：执行应用程序的业务逻辑</li>
-</ul>
-<h5 id="单线程版本"><a href="#单线程版本" class="headerlink" title="单线程版本"></a>单线程版本</h5><p>单线程版本其实就是用一个线程完成事件的通知，实际的I/O操作和业务处理</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png" alt="basic"></p>
-<p><strong>缺点</strong></p>
-<p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
-<h5 id="多线程版本"><a href="#多线程版本" class="headerlink" title="多线程版本"></a>多线程版本</h5><p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png" alt="multithreaded"></p>
-<p><strong>缺点</strong></p>
-<p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
-<h5 id="主从版本"><a href="#主从版本" class="headerlink" title="主从版本"></a>主从版本</h5><p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png" alt="master-slave"></p>
-<h4 id="Netty线程模型-1"><a href="#Netty线程模型-1" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h4><p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png" alt="netty"></p>
-<p><strong>模型解释</strong></p>
-<ol>
-<li>Netty抽象出两组线程池BossGroup和WorkerGroup，BossGroup专门负责接收客户端的连接，WorkGroup专门负责网络的读写</li>
-<li>BossGroup和WorkGroup都是NioEventLoopGroup</li>
-<li>NioEventLoopGroup相当于一个事件循环线程组，这个组中含有多个事件循环线程，每一个事件循环线程是NioEventLoop</li>
-<li>每个NioEventLoop都有一个selector，用于监听注册在其上的socketChannel的网络通讯</li>
-<li>每个Boss NioEventLoop线程内部循环执行的步骤<ul>
-<li>处理accept事件，与client建立连接，生成NioSocketChannel</li>
-<li>将NioSocketChannel注册到某个worker NioEventLoop上的selector</li>
-<li>处理任务队列的任务，即runAllTask</li>
-</ul>
-</li>
-<li>每个worker NioEventLoop处理NioSocketChannel业务时，会使用pipeline(管道)，管道中维护了很多handler处理器用来处理channel中的数据</li>
-</ol>
-<h3 id="Netty模块组件"><a href="#Netty模块组件" class="headerlink" title="Netty模块组件"></a>Netty模块组件</h3><h4 id="【Bootstrap、ServerBootStrap】："><a href="#【Bootstrap、ServerBootStrap】：" class="headerlink" title="【Bootstrap、ServerBootStrap】："></a>【Bootstrap、ServerBootStrap】：</h4><p>Bootstrap意思是引导，一个Netty应用通用由一个Bootstrap开始，主要作用是配置整个Netty程序，串联各个组件，Netty中Bootstrap类是客户端程序的启动引导类，ServerBootStrap是服务端的启动引导类</p>
-<h4 id="【Future、ChannelFuture】："><a href="#【Future、ChannelFuture】：" class="headerlink" title="【Future、ChannelFuture】："></a>【Future、ChannelFuture】：</h4><p>正如前面介绍,在Netty中所有的IO操作都是异步的，不能立刻得知消息是否被正确处理。</p>
-<p>但是可以过一会等他执行完成或者直接注册一个监听，具体的实现就是通过Future和ChannelFuture，他们可以注册一个监听，当操作执行完成或失败时监听会自动触发注册的监听事件。</p>
-<h4 id="【Channel】："><a href="#【Channel】：" class="headerlink" title="【Channel】："></a>【Channel】：</h4><p>Netty网络通信的组件，能够用于执行网络的I/O操作。Channel为用户提供：</p>
-<ol>
-<li><p>当前网络连接的通道的状态（例如是否打开？是否已连接）</p>
-</li>
-<li><p>网络连接的参数配置（例如接收缓冲区的大小）</p>
-</li>
-<li><p>提供异步的网络I/O操作（如建立连接，读写，绑定端口），异步调用意味着任何I/O调用都将立即返回，并且不保证在调用结束时所请求的I/O操作已完成。</p>
-</li>
-<li><p>调用立即返回一个ChannelFuture实例，通过注册监听器到ChannelFuture上，可以在I/O操作成功、失败或者取消时回调通知调用方。</p>
-</li>
-<li><p>支持关联I/O操作与对应的处理程序</p>
-<p>不同协议、不同的阻塞类型的连接都有不同的Chennle类型与之对应。</p>
-<p>下面是一些常用的Channel类型：</p>
-<blockquote>
-<p>NioSocketChannel，异步的客户端 TCP Socket 连接。</p>
-<p>NioServerSocketChannel，异步的服务器端 TCP Socket 连接。</p>
-<p>NioDatagramChannel，异步的 UDP 连接。</p>
-<p>NioSctpChannel，异步的客户端 Sctp 连接。</p>
-<p>NioSctpServerChannel，异步的 Sctp 服务器端连接。这些通道涵盖了 UDP 和 TCP 网络 IO 以及文件 IO。</p>
-</blockquote>
-</li>
-</ol>
-<h4 id="【Selector】"><a href="#【Selector】" class="headerlink" title="【Selector】:"></a>【Selector】:</h4><p>Netty基于Selector对象实现I/O多路复用，通过Selector一个线程可以监听多个连接的Channel事件。当向一个Selector中注册Channel后，Selector内部的机制就可以自动不断地查询(Select)这些注册的Channel是否有已就绪的I/O事件（例如可读，可写，网络连接完成等），这样程序就可以很简单的使用一个线程高效的管理多个Channel</p>
-<h4 id="【NioEventLoop】："><a href="#【NioEventLoop】：" class="headerlink" title="【NioEventLoop】："></a>【NioEventLoop】：</h4><p>NioEventLoop中维护了一个线程和任务队列，支持异步提交执行任务，线程启动时会调用NioEventLoop的run方法，执行I/O任务和非I/O任务：</p>
-<ul>
-<li>I/O任务，即selectionKey中ready的事件，如accept、connect、read、write等，由processsSelectedKeys方法触发。</li>
-<li>非I/O任务，添加到taskQueue中的任务，如register(),bind()等任务，有runAllTasks方法触发</li>
-</ul>
-<h4 id="【NioEventLoopGroup】："><a href="#【NioEventLoopGroup】：" class="headerlink" title="【NioEventLoopGroup】："></a>【NioEventLoopGroup】：</h4><p>NioEventLoopGroup，主要管理eventLoop的生命周期，可以理解为一个线程池，内部维护了一组线程，每个线程（NioEventLoop）负责处理多个Channel上的事件，而一个Channel只对应于一个线程。</p>
-<h4 id="【ChannelHandler】："><a href="#【ChannelHandler】：" class="headerlink" title="【ChannelHandler】："></a>【ChannelHandler】：</h4><p>ChannelHandler是一个接口，处理I/O事件或拦截I/O操作，并将其转发到其ChannelPipeline(业务处理链)中的下一个处理程序。</p>
-<p>ChanneHandler本身并没有提供很多方法，因为这个接口有许多的方法需要实现，方便使用期间，可以继承他的子类：</p>
-<blockquote>
-<p>ChannelInboundHandler 用于处理入站 I/O 事件。</p>
-<p>ChannelOutboundHandler 用于处理出站 I/O 操作。</p>
-</blockquote>
-<p>或者使用一下适配器类：</p>
-<blockquote>
-<p>ChannelInboundHandlerAdapter 用于处理入站 I/O 事件。</p>
-<p>ChannelOutboundHandlerAdapter 用于处理出站 I/O 操作。</p>
-</blockquote>
-<h4 id="【ChannelHandlerContext】："><a href="#【ChannelHandlerContext】：" class="headerlink" title="【ChannelHandlerContext】："></a>【ChannelHandlerContext】：</h4><p>保存Channel相关的所有上下文信息，同时关联一个ChannelHandler对象。</p>
-<h4 id="【ChannelPipeline】："><a href="#【ChannelPipeline】：" class="headerlink" title="【ChannelPipeline】："></a>【ChannelPipeline】：</h4><p>保存ChannelHandler的List，用于处理或拦截Channel的入站事件和出站操作</p>
-<p>ChannelPipeline实现了一种高级形式的拦截过滤器模式，是用户可以完全控制事件的处理方式，以及Channel中各个ChannelHandler如何相互相互。</p>
-<p>在Netty中每个Channel都有且仅有一个ChannelPipeline与之对应，他们的组成关系：</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/channel_pipeline.png" alt="channel_pipeline"></p>
-<p>一个Channel包含了一个ChannelPipeline，而ChannelPipeline中又维护一个由ChaennlHandlerContext组成的双向链表，并且每个ChannelHandlerContext中有关联着一个ChannelHandler。</p>
-<p>read事件(入站事件)和write事件(出站事件)在一个双向链表中，入站事件会从链表head往后传递到最后一个入站的handler，出站事件会从链表tail往前传递到最前一个出战的handler，两种类型的handler互不干扰</p>
-<h3 id="ByteBuf详解"><a href="#ByteBuf详解" class="headerlink" title="ByteBuf详解"></a>ByteBuf详解</h3><p>从结构上来说，ByteBuf有一串字节数组构成。数组中每个字节用来存放信息。</p>
-<p>ByteBuf提供了两个索引，一个用于读取数据，一个用于写入数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置</p>
-<p>当从ByteBuf读取时，它的readIndex(读索引)将会根据读取的字节递增。</p>
-<p>同样当写ByteBuf时，他的writeIndex也会根据写入的字节数进行递增。</p>
-<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/byte-buf.png" alt="ByteBuf"></p>
-<p>需要注意的是极限的情况是 readerIndex 刚好读到了 writerIndex 写入的地方。<br>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
-<blockquote>
-<p>已经读取的区域：[0,readerindex)</p>
-<p>可读取的区域：[readerindex,writerIndex)</p>
-<p> 可写的区域: [writerIndex,capacity)</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>分布式框架</category>
-      </categories>
-      <tags>
-        <tag>netty</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ApplicationContext启动过程</title>
     <url>/2021/07/04/ApplicationContext%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/</url>
     <content><![CDATA[<h2 id="如何理解refresh-？"><a href="#如何理解refresh-？" class="headerlink" title="如何理解refresh()？"></a>如何理解refresh()？</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Load or refresh the persistent representation of the configuration,</span></span><br><span class="line"><span class="comment">   * which might an XML file, properties file, or relational database schema.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;As this is a startup method, it should destroy already created singletons</span></span><br><span class="line"><span class="comment">   * if it fails, to avoid dangling resources. In other words, after invocation</span></span><br><span class="line"><span class="comment">   * of that method, either all or no singletons at all should be instantiated.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> BeansException if the bean factory could not be initialized</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@throws</span> IllegalStateException if already initialized and multiple refresh</span></span><br><span class="line"><span class="comment">   * attempts are not supported</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException</span>;</span><br></pre></td></tr></table></figure>
@@ -271,6 +158,119 @@
       </categories>
       <tags>
         <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Netty核心功能与线程模型</title>
+    <url>/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
+    <content><![CDATA[<h3 id="Netty初窥"><a href="#Netty初窥" class="headerlink" title="Netty初窥"></a>Netty初窥</h3><p>NIO 的类库和 API 繁杂， 使用麻烦： 需要熟练掌握Selector、 ServerSocketChannel、 SocketChannel、 ByteBuffer等。 </p>
+<a id="more"></a>
+
+<p>开发工作量和难度都非常大： 例如客户端面临断线重连、 网络闪断、心跳处理、半包读写、 网络拥塞和异常流的处理等等。</p>
+<p>Netty 对 JDK 自带的 NIO 的 API 进行了良好的封装，解决了上述问题。且Netty拥有高性能、 吞吐量更高，延迟更低，减少资源消耗，最小化不必要的内存复制等优点。</p>
+<p>Netty框架的目标大概可以理解为让业务代码从网络基础应用编码中分离，让开发可以专注开发业务代码，而不用写一大堆类似NIO的网络处理操作。</p>
+<h3 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h3><h4 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h4><p>Reactor 是一种设计模式，<a href="https://en.wikipedia.org/wiki/Reactor_pattern">wikipedia</a> 对其定义如下：</p>
+<blockquote>
+<p>Reactor 是一个或多个输入事件的处理模式，用于处理并发传递给服务处理程序的服务请求。服务处理程序判断传入请求发生的事件，并将它们同步的分派给关联的请求处理程序。</p>
+</blockquote>
+<p>Reactor 模式按照职责不同，通常可以把线程分为 Reactor 线程、IO 线程和业务线程：</p>
+<ul>
+<li>Reactor 线程：轮询通知发生IO的通道，并分派合适的 Handler 处理</li>
+<li>IO 线程：执行实际的读写操作</li>
+<li>业务线程：执行应用程序的业务逻辑</li>
+</ul>
+<h5 id="单线程版本"><a href="#单线程版本" class="headerlink" title="单线程版本"></a>单线程版本</h5><p>单线程版本其实就是用一个线程完成事件的通知，实际的I/O操作和业务处理</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/basic.png" alt="basic"></p>
+<p><strong>缺点</strong></p>
+<p>Reactor作用就是要迅速的触发Handler，显然Handler处理的过程会导致Reactor变慢，此时可以将非IO操作从Reactor分离。</p>
+<h5 id="多线程版本"><a href="#多线程版本" class="headerlink" title="多线程版本"></a>多线程版本</h5><p>多线程版本将业务处理和 I/O 操作进行分离，Reactor 线程只关注事件分发和实际的 IO 操作，业务处理如协议的编解码都分配给线程池处理。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/multi-threaded.png" alt="multithreaded"></p>
+<p><strong>缺点</strong></p>
+<p>可能会出现，业务处理很快，大部分的 Reactor 线程都在处理 IO，导致 CPU 闲置，降低了响应速度。</p>
+<h5 id="主从版本"><a href="#主从版本" class="headerlink" title="主从版本"></a>主从版本</h5><p>主从 Reactor 版本设计了一个 <strong>主Reactor</strong> 用于处理连接接收事件，多个 <strong>从Reactor</strong> 处理实际的 I/O，分工合作，匹配 CPU 和 IO 速率。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/master-slave.png" alt="master-slave"></p>
+<h4 id="Netty线程模型-1"><a href="#Netty线程模型-1" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h4><p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/netty.png" alt="netty"></p>
+<p><strong>模型解释</strong></p>
+<ol>
+<li>Netty抽象出两组线程池BossGroup和WorkerGroup，BossGroup专门负责接收客户端的连接，WorkGroup专门负责网络的读写</li>
+<li>BossGroup和WorkGroup都是NioEventLoopGroup</li>
+<li>NioEventLoopGroup相当于一个事件循环线程组，这个组中含有多个事件循环线程，每一个事件循环线程是NioEventLoop</li>
+<li>每个NioEventLoop都有一个selector，用于监听注册在其上的socketChannel的网络通讯</li>
+<li>每个Boss NioEventLoop线程内部循环执行的步骤<ul>
+<li>处理accept事件，与client建立连接，生成NioSocketChannel</li>
+<li>将NioSocketChannel注册到某个worker NioEventLoop上的selector</li>
+<li>处理任务队列的任务，即runAllTask</li>
+</ul>
+</li>
+<li>每个worker NioEventLoop处理NioSocketChannel业务时，会使用pipeline(管道)，管道中维护了很多handler处理器用来处理channel中的数据</li>
+</ol>
+<h3 id="Netty模块组件"><a href="#Netty模块组件" class="headerlink" title="Netty模块组件"></a>Netty模块组件</h3><h4 id="【Bootstrap、ServerBootStrap】："><a href="#【Bootstrap、ServerBootStrap】：" class="headerlink" title="【Bootstrap、ServerBootStrap】："></a>【Bootstrap、ServerBootStrap】：</h4><p>Bootstrap意思是引导，一个Netty应用通用由一个Bootstrap开始，主要作用是配置整个Netty程序，串联各个组件，Netty中Bootstrap类是客户端程序的启动引导类，ServerBootStrap是服务端的启动引导类</p>
+<h4 id="【Future、ChannelFuture】："><a href="#【Future、ChannelFuture】：" class="headerlink" title="【Future、ChannelFuture】："></a>【Future、ChannelFuture】：</h4><p>正如前面介绍,在Netty中所有的IO操作都是异步的，不能立刻得知消息是否被正确处理。</p>
+<p>但是可以过一会等他执行完成或者直接注册一个监听，具体的实现就是通过Future和ChannelFuture，他们可以注册一个监听，当操作执行完成或失败时监听会自动触发注册的监听事件。</p>
+<h4 id="【Channel】："><a href="#【Channel】：" class="headerlink" title="【Channel】："></a>【Channel】：</h4><p>Netty网络通信的组件，能够用于执行网络的I/O操作。Channel为用户提供：</p>
+<ol>
+<li><p>当前网络连接的通道的状态（例如是否打开？是否已连接）</p>
+</li>
+<li><p>网络连接的参数配置（例如接收缓冲区的大小）</p>
+</li>
+<li><p>提供异步的网络I/O操作（如建立连接，读写，绑定端口），异步调用意味着任何I/O调用都将立即返回，并且不保证在调用结束时所请求的I/O操作已完成。</p>
+</li>
+<li><p>调用立即返回一个ChannelFuture实例，通过注册监听器到ChannelFuture上，可以在I/O操作成功、失败或者取消时回调通知调用方。</p>
+</li>
+<li><p>支持关联I/O操作与对应的处理程序</p>
+<p>不同协议、不同的阻塞类型的连接都有不同的Chennle类型与之对应。</p>
+<p>下面是一些常用的Channel类型：</p>
+<blockquote>
+<p>NioSocketChannel，异步的客户端 TCP Socket 连接。</p>
+<p>NioServerSocketChannel，异步的服务器端 TCP Socket 连接。</p>
+<p>NioDatagramChannel，异步的 UDP 连接。</p>
+<p>NioSctpChannel，异步的客户端 Sctp 连接。</p>
+<p>NioSctpServerChannel，异步的 Sctp 服务器端连接。这些通道涵盖了 UDP 和 TCP 网络 IO 以及文件 IO。</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="【Selector】"><a href="#【Selector】" class="headerlink" title="【Selector】:"></a>【Selector】:</h4><p>Netty基于Selector对象实现I/O多路复用，通过Selector一个线程可以监听多个连接的Channel事件。当向一个Selector中注册Channel后，Selector内部的机制就可以自动不断地查询(Select)这些注册的Channel是否有已就绪的I/O事件（例如可读，可写，网络连接完成等），这样程序就可以很简单的使用一个线程高效的管理多个Channel</p>
+<h4 id="【NioEventLoop】："><a href="#【NioEventLoop】：" class="headerlink" title="【NioEventLoop】："></a>【NioEventLoop】：</h4><p>NioEventLoop中维护了一个线程和任务队列，支持异步提交执行任务，线程启动时会调用NioEventLoop的run方法，执行I/O任务和非I/O任务：</p>
+<ul>
+<li>I/O任务，即selectionKey中ready的事件，如accept、connect、read、write等，由processsSelectedKeys方法触发。</li>
+<li>非I/O任务，添加到taskQueue中的任务，如register(),bind()等任务，有runAllTasks方法触发</li>
+</ul>
+<h4 id="【NioEventLoopGroup】："><a href="#【NioEventLoopGroup】：" class="headerlink" title="【NioEventLoopGroup】："></a>【NioEventLoopGroup】：</h4><p>NioEventLoopGroup，主要管理eventLoop的生命周期，可以理解为一个线程池，内部维护了一组线程，每个线程（NioEventLoop）负责处理多个Channel上的事件，而一个Channel只对应于一个线程。</p>
+<h4 id="【ChannelHandler】："><a href="#【ChannelHandler】：" class="headerlink" title="【ChannelHandler】："></a>【ChannelHandler】：</h4><p>ChannelHandler是一个接口，处理I/O事件或拦截I/O操作，并将其转发到其ChannelPipeline(业务处理链)中的下一个处理程序。</p>
+<p>ChanneHandler本身并没有提供很多方法，因为这个接口有许多的方法需要实现，方便使用期间，可以继承他的子类：</p>
+<blockquote>
+<p>ChannelInboundHandler 用于处理入站 I/O 事件。</p>
+<p>ChannelOutboundHandler 用于处理出站 I/O 操作。</p>
+</blockquote>
+<p>或者使用一下适配器类：</p>
+<blockquote>
+<p>ChannelInboundHandlerAdapter 用于处理入站 I/O 事件。</p>
+<p>ChannelOutboundHandlerAdapter 用于处理出站 I/O 操作。</p>
+</blockquote>
+<h4 id="【ChannelHandlerContext】："><a href="#【ChannelHandlerContext】：" class="headerlink" title="【ChannelHandlerContext】："></a>【ChannelHandlerContext】：</h4><p>保存Channel相关的所有上下文信息，同时关联一个ChannelHandler对象。</p>
+<h4 id="【ChannelPipeline】："><a href="#【ChannelPipeline】：" class="headerlink" title="【ChannelPipeline】："></a>【ChannelPipeline】：</h4><p>保存ChannelHandler的List，用于处理或拦截Channel的入站事件和出站操作</p>
+<p>ChannelPipeline实现了一种高级形式的拦截过滤器模式，是用户可以完全控制事件的处理方式，以及Channel中各个ChannelHandler如何相互相互。</p>
+<p>在Netty中每个Channel都有且仅有一个ChannelPipeline与之对应，他们的组成关系：</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/channel_pipeline.png" alt="channel_pipeline"></p>
+<p>一个Channel包含了一个ChannelPipeline，而ChannelPipeline中又维护一个由ChaennlHandlerContext组成的双向链表，并且每个ChannelHandlerContext中有关联着一个ChannelHandler。</p>
+<p>read事件(入站事件)和write事件(出站事件)在一个双向链表中，入站事件会从链表head往后传递到最后一个入站的handler，出站事件会从链表tail往前传递到最前一个出战的handler，两种类型的handler互不干扰</p>
+<h3 id="ByteBuf详解"><a href="#ByteBuf详解" class="headerlink" title="ByteBuf详解"></a>ByteBuf详解</h3><p>从结构上来说，ByteBuf有一串字节数组构成。数组中每个字节用来存放信息。</p>
+<p>ByteBuf提供了两个索引，一个用于读取数据，一个用于写入数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置</p>
+<p>当从ByteBuf读取时，它的readIndex(读索引)将会根据读取的字节递增。</p>
+<p>同样当写ByteBuf时，他的writeIndex也会根据写入的字节数进行递增。</p>
+<p><img src="/2021/01/21/Netty%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/byte-buf.png" alt="ByteBuf"></p>
+<p>需要注意的是极限的情况是 readerIndex 刚好读到了 writerIndex 写入的地方。<br>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
+<blockquote>
+<p>已经读取的区域：[0,readerindex)</p>
+<p>可读取的区域：[readerindex,writerIndex)</p>
+<p> 可写的区域: [writerIndex,capacity)</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>分布式框架</category>
+      </categories>
+      <tags>
+        <tag>netty</tag>
       </tags>
   </entry>
   <entry>
@@ -474,6 +474,232 @@
 <p>在销毁时，Spring会找出实现了DisposableBean接口的Bean。</p>
 <p>但是我们在定义一个Bean时，如果这个Bean实现了DisposableBean接口，或者实现了AutoCloseable接口，或者在BeanDefinition中指定了destroyMethodName，那么这个Bean都属于“DisposableBean”，这些Bean在容器关闭时都要调用相应的销毁方法。</p>
 <p>所以，这里就需要进行适配，将实现了DisposableBean接口、或者AutoCloseable接口等适配成实现了DisposableBean接口，所以就用到了DisposableBeanAdapter，会把实现了AutoCloseable接口的类封装成DisposableBeanAdapter，而DisposableBeanAdapter实现了DisposableBean接口。</p>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring中AOP的底层原理分析</title>
+    <url>/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/</url>
+    <content><![CDATA[<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><h3 id="Advisor和Advice"><a href="#Advisor和Advice" class="headerlink" title="Advisor和Advice"></a>Advisor和Advice</h3><p><strong>Advice</strong>：建议/通知，可以理解为建议增加的一些逻辑（之前或者之后），但是没有表示用在哪些地方</p>
+<p>Spring中的Advice（接口）分为：</p>
+<pre><code> 1. 前置Advice：MethodBeforeAdvice
+ 2. 后置Advice：AfterReturningAdvice
+ 3. 环绕Advice：MethodInterceptor
+ 4. 异常Advice：ThrowsAdvice</code></pre>
+<a id="more"></a>
+
+<p><strong>Advisor</strong>：表示一个Advice可以应用在哪些地方，而“哪些地方”就是Pointcut（切点）</p>
+<h3 id="Pointcut"><a href="#Pointcut" class="headerlink" title="Pointcut"></a>Pointcut</h3><p><strong>Pointcut</strong>：切点，表示想在哪些地方增加代理逻辑</p>
+<p>ClassFilter：类匹配器</p>
+<p>MethodMatcher：方法匹配器</p>
+<h2 id="使用ProxyFactor通过编程创建AOP代理"><a href="#使用ProxyFactor通过编程创建AOP代理" class="headerlink" title="使用ProxyFactor通过编程创建AOP代理"></a>使用ProxyFactor通过编程创建AOP代理</h2><p>定义一个MyAdvisor</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyAdvisor</span> <span class="keyword">implements</span> <span class="title">PointcutAdvisor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Pointcut <span class="title">getPointcut</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        NameMatchMethodPointcut methodPointcut = <span class="keyword">new</span> NameMatchMethodPointcut();</span><br><span class="line">        methodPointcut.addMethodName(<span class="string">&quot;test&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> methodPointcut;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Advice <span class="title">getAdvice</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        MethodBeforeAdvice methodBeforeAdvice = <span class="keyword">new</span> MethodBeforeAdvice() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">before</span><span class="params">(Method method, Object[] args, Object target)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;执行方法前&quot;</span>+method.getName());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="keyword">return</span> methodBeforeAdvice;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isPerInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>定义一个UserService</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;111&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">ProxyFactory factory = <span class="keyword">new</span> ProxyFactory();</span><br><span class="line">factory.setTarget(<span class="keyword">new</span> UserService());</span><br><span class="line">factory.addAdvisor(<span class="keyword">new</span> MyAdvisor());</span><br><span class="line">UserService userService = (UserService) factory.getProxy();</span><br><span class="line">userService.test();</span><br></pre></td></tr></table></figure>
+<h3 id="ProxyFactory的工作原理"><a href="#ProxyFactory的工作原理" class="headerlink" title="ProxyFactory的工作原理"></a>ProxyFactory的工作原理</h3><p>ProxyFactory就是一个代理对象生产工厂，在生成代理对象之前需要对代理工厂进行配置</p>
+<p>ProxyFactory在生成代理对象之前需要决定到底是使用JDK动态代理还是CGLIB技术：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// config就是ProxyFactory对象</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// optimize为true,或proxyTargetClass为true,或用户没有给ProxyFactory对象添加interface</span></span><br><span class="line"><span class="keyword">if</span> (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) &#123;</span><br><span class="line">    Class&lt;?&gt; targetClass = config.getTargetClass();</span><br><span class="line">    <span class="keyword">if</span> (targetClass == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> AopConfigException(<span class="string">&quot;TargetSource cannot determine target class: &quot;</span> +</span><br><span class="line">                <span class="string">&quot;Either an interface or a target is required for proxy creation.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// targetClass是接口，直接使用Jdk动态代理</span></span><br><span class="line">    <span class="keyword">if</span> (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> JdkDynamicAopProxy(config);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 使用Cglib</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> ObjenesisCglibAopProxy(config);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 使用Jdk动态代理</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> JdkDynamicAopProxy(config);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="JdkDynamicAopProxy创建代理对象过程"><a href="#JdkDynamicAopProxy创建代理对象过程" class="headerlink" title="JdkDynamicAopProxy创建代理对象过程"></a>JdkDynamicAopProxy创建代理对象过程</h4><ol>
+<li>获取生成代理对象所需要实现的接口集合<ol>
+<li>获取通过ProxyFactory.addInterface()所添加的接口，如果没有通过ProxyFactory.addInterface()添加接口，那么则看ProxyFactory.setTargetClass()所设置的targetClass是不是一个接口，把接口添加到结果集合中</li>
+<li>同时添加SpringProxy，Advised，DecoratingProxy到结果集合中</li>
+</ol>
+</li>
+<li>确定好要代理的集合之后，就利用Proxy.newProxyInstance()生成一个代理对象</li>
+</ol>
+<h3 id="JdkDynamicAopProxy创建的代理对象执行过程"><a href="#JdkDynamicAopProxy创建的代理对象执行过程" class="headerlink" title="JdkDynamicAopProxy创建的代理对象执行过程"></a>JdkDynamicAopProxy创建的代理对象执行过程</h3><ol>
+<li>如果通过ProxyFactory.setExposeProxy()把exposeProxy设置为了true，那么则把代理对象设置到一个ThreadLocal（currentProxy）中去。</li>
+<li>获取通过ProxyFactory所设置的target，如果设置的是targetClass，那么target将为null</li>
+<li>根据当前所调用的方法对象寻找ProxyFactory中所添加的并匹配的Advisor，并且把Advisor封装为MethodInterceptor返回，得到MethodInterceptor链叫做chain</li>
+<li>如果chain为空，则直接执行target对应的当前方法，如果target为null会报错</li>
+<li>如果chain不为空，则会依次执行chain中的MethodInterceptor<ol>
+<li>如果当前MethodInterceptor是MethodBeforeAdviceInterceptor，那么则先执行Advisor中所advice的before()方法，然后执行下一个MethodInterceptor</li>
+<li>如果当前MethodInterceptor是AfterReturningAdviceInterceptor，那么则先执行下一个MethodInterceptor，拿到返回值之后，再执行Advisor中所advice的afterReturning()方法</li>
+</ol>
+</li>
+</ol>
+<h3 id="ObjenesisCglibAopProxy创建代理对象过程"><a href="#ObjenesisCglibAopProxy创建代理对象过程" class="headerlink" title="ObjenesisCglibAopProxy创建代理对象过程"></a>ObjenesisCglibAopProxy创建代理对象过程</h3><ol>
+<li>创建Enhancer</li>
+<li>设置Enhancer的superClass为通过ProxyFactory.setTarget()所设置的对象的类</li>
+<li>设置Enhancer的interfaces为通过ProxyFactory.addInterface()所添加的接口，以及SpringProxy、Advised接口</li>
+<li>设置Enhancer的Callbacks为DynamicAdvisedInterceptor</li>
+<li>最后通过Enhancer创建一个代理对象</li>
+</ol>
+<h3 id="ObjenesisCglibAopProxy创建的代理对象执行过程"><a href="#ObjenesisCglibAopProxy创建的代理对象执行过程" class="headerlink" title="ObjenesisCglibAopProxy创建的代理对象执行过程"></a>ObjenesisCglibAopProxy创建的代理对象执行过程</h3><p>执行过程主要就看DynamicAdvisedInterceptor中的实现，执行逻辑和JdkDynamicAopProxy中是一样的。</p>
+<h2 id="使用“自动代理”功能"><a href="#使用“自动代理”功能" class="headerlink" title="使用“自动代理”功能"></a>使用“自动代理”功能</h2><p>“自动代理”表示，只需要在Spring中添加某个Bean，这个Bean是一个BeanPostProcessor，那么Spring在每创建一个Bean时，都会经过这个BeanPostProcessor的判断，去判断当前正在创建的这个Bean是不是需要进行AOP。</p>
+<p>我们可以在项目中定义很多个Advisor，定义方式有两种：</p>
+<ol>
+<li>通过实现PointcutAdvisor接口</li>
+<li>通过@Aspect、@Pointcut、@Before等注解</li>
+</ol>
+<p>在创建某个Bean时，会根据当前这个Bean的信息，比如对应的类，以及当前Bean中的方法信息，去和定义的所有Advisor进行匹配，如果匹配到了其中某些Advisor，那么就会把这些Advisor给找出来，并且添加到ProxyFactory中去，在利用ProxyFactory去生成代理对象</p>
+<h3 id="BeanNameAutoProxyCreator"><a href="#BeanNameAutoProxyCreator" class="headerlink" title="BeanNameAutoProxyCreator"></a>BeanNameAutoProxyCreator</h3><p>定义的这个bean，相当于一个“自动代理”器，有了这个Bean之后，可以自动的对setBeanNames中所对应的bean进行代理，代理逻辑为所设置的interceptorNames</p>
+<p><img src="/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/BeanNameAutoProxyCreator.png" alt="image-20210816005733019"></p>
+<h3 id="DefaultAdvisorAutoProxyCreator"><a href="#DefaultAdvisorAutoProxyCreator" class="headerlink" title="DefaultAdvisorAutoProxyCreator"></a>DefaultAdvisorAutoProxyCreator</h3><p><strong>DefaultAdvisorAutoProxyCreator</strong>这个更加强大，只要添加了这个Bean，它就会自动识别所有的Advisor中的PointCut进行代理</p>
+<p><img src="/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/DefaultAdvisorAutoProxyCreator.png" alt="image-20210816005939930"></p>
+<p><strong>AbstractAutoProxyCreator</strong>实现了SmartInstantiationAwareBeanPostProcessor接口，是一个BeanPostProcessor</p>
+<ol>
+<li>在某个Bean<strong>实例化之前</strong>，查看该AbstractAutoProxyCreator中是不是设置了CustomTargetSource，如果设置了就查看当前Bean是不是需要创建一个TargetSource，如果需要就会创建一个TargetSource对象，然后进行AOP创建一个代理对象，并返回该代理对象</li>
+<li>如果某个Bean出现了循环依赖，那么会利用getEarlyBeanReference()方法提前进行AOP</li>
+<li>在某个Bean<strong>初始化之后</strong>，会调用wrapIfNecessary()方法进行AOP</li>
+<li>在这个类中提供了一个抽象方法：getAdvicesAndAdvisorsForBean()，表示对于某个Bean匹配了哪些Advices和Advisors</li>
+</ol>
+<p><strong>AbstractAdvisorAutoProxyCreator</strong>继承了AbstractAutoProxyCreator，AbstractAdvisorAutoProxyCreator中实现了getAdvicesAndAdvisorsForBean()方法，实现逻辑为：</p>
+<ol>
+<li><p>调用findEligibleAdvisors()</p>
+</li>
+<li><ol>
+<li>调用findCandidateAdvisors，得到所有Advisor类型的Bean</li>
+<li>按当前正在进行Bean的生命周期的Bean进行过滤</li>
+</ol>
+</li>
+</ol>
+<h3 id="EnableAspectJAutoProxy"><a href="#EnableAspectJAutoProxy" class="headerlink" title="@EnableAspectJAutoProxy"></a>@EnableAspectJAutoProxy</h3><p>这个注解主要是添加了一个AnnotationAwareAspectJAutoProxyCreator类型的BeanDefinition</p>
+<p><img src="/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/AnnotationAwareAspectJAutoProxyCreator.png" alt="image-20210816010152672"></p>
+<p><strong>AspectJAwareAdvisorAutoProxyCreator</strong>继承了AbstractAdvisorAutoProxyCreator，重写了shouldSkip(Class&lt;?&gt; beanClass, String beanName)方法，表示某个bean需不需要进行AOP，在shouldSkip()方法中：</p>
+<ol>
+<li>拿到所有的Advisor</li>
+<li>遍历所有的Advisor，如果当前bean是AspectJPointcutAdvisor，那么则跳过</li>
+</ol>
+<p><strong>AnnotationAwareAspectJAutoProxyCreator</strong>继承了AspectJAwareAdvisorAutoProxyCreator，重写了findCandidateAdvisors()方法，它即可以找到Advisor类型的bean，也能把所有@Aspect注解标注的类扫描出来并生成Advisor</p>
+<h2 id="注解和源码对应关系"><a href="#注解和源码对应关系" class="headerlink" title="注解和源码对应关系"></a>注解和源码对应关系</h2><ol>
+<li><p>@Before对应的是AspectJMethodBeforeAdvice，直接实现MethodBeforeAdvice，在进行动态代理时会把AspectJMethodBeforeAdvice转成MethodBeforeAdviceInterceptor，也就转变成了MethodBeforeAdviceInterceptor</p>
+<ol>
+<li>先执行advice对应的方法</li>
+<li>再执行MethodInvocation的proceed()，会执行下一个Interceptor，如果没有下一个Interceptor了，会执行target对应的方法</li>
+</ol>
+</li>
+<li><p>@After对应的是AspectJAfterAdvice，直接实现了MethodInterceptor</p>
+<ol>
+<li>先执行MethodInvocation的proceed()，会执行下一个Interceptor，如果没有下一个Interceptor了，会执行target对应的方法</li>
+<li>再执行advice对应的方法</li>
+</ol>
+</li>
+<li><p>@Around对应的是AspectJAroundAdvice，直接实现了MethodInterceptor</p>
+<ol>
+<li>直接执行advice对应的方法</li>
+</ol>
+</li>
+<li><p>@AfterThrowing对应的是AspectJAfterThrowingAdvice，直接实现了MethodInterceptor</p>
+<ol>
+<li>先执行MethodInvocation的proceed()，会执行下一个Interceptor，如果没有下一个Interceptor了，会执行target对应的方法</li>
+<li>如果上面抛了Throwable，那么则会执行advice对应的方法</li>
+</ol>
+</li>
+<li><p>@AfterReturning对应的是AspectJAfterReturningAdvice，实现了AfterReturningAdvice，在进行动态代理时会把AspectJAfterReturningAdvice转成AfterReturningAdviceInterceptor，也就转变成了MethodInterceptor</p>
+</li>
+<li><ol>
+<li>先执行MethodInvocation的proceed()，会执行下一个Interceptor，如果没有下一个Interceptor了，会执行target对应的方法</li>
+<li>执行上面的方法后得到最终的方法的返回值</li>
+<li>再执行Advice对应的方法</li>
+</ol>
+</li>
+</ol>
+<h3 id="Spring中AOP的原理流程图"><a href="#Spring中AOP的原理流程图" class="headerlink" title="Spring中AOP的原理流程图"></a>Spring中AOP的原理流程图</h3><p><img src="/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/AOP.jpg" alt="AOP"></p>
+]]></content>
+      <categories>
+        <category>框架源码</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring中事务的底层工作原理</title>
+    <url>/2021/08/16/Spring%E4%B8%AD%E4%BA%8B%E5%8A%A1%E7%9A%84%E5%BA%95%E5%B1%82%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86/</url>
+    <content><![CDATA[<h2 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h2><p>@EnableTransactionManagement注解注入了两个bean：</p>
+<ol>
+<li>AutoProxyRegistrar</li>
+<li>ProxyTransactionManagementConfiguration</li>
+</ol>
+<a id="more"></a>
+
+<h3 id="AutoProxyRegistrar"><a href="#AutoProxyRegistrar" class="headerlink" title="AutoProxyRegistrar"></a>AutoProxyRegistrar</h3><p>AutoProxyRegistrar主要的作用就是注册了一个InfrastructureAdvisorAutoProxyCreator的Bean。</p>
+<p>InfrastructureAdvisorAutoProxyCreator继承了AbstractAdvisorAutoProxyCreator，所以这个类的主要作用就是<strong>开启自动代理</strong>的作用</p>
+<h3 id="ProxyTransactionManagementConfiguration"><a href="#ProxyTransactionManagementConfiguration" class="headerlink" title="ProxyTransactionManagementConfiguration"></a>ProxyTransactionManagementConfiguration</h3><p>ProxyTransactionManagementConfiguration中定义了三个bean：</p>
+<ol>
+<li>BeanFactoryTransactionAttributeSourceAdvisor：一个PointcutAdvisor</li>
+<li>AnnotationTransactionAttributeSource：就是Pointcut</li>
+<li>TransactionInterceptor：就是代理逻辑Advice</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">BeanFactoryTransactionAttributeSourceAdvisor advisor = <span class="keyword">new</span> BeanFactoryTransactionAttributeSourceAdvisor();</span><br><span class="line">advisor.setTransactionAttributeSource(transactionAttributeSource); </span><br><span class="line">advisor.setAdvice(transactionInterceptor);</span><br></pre></td></tr></table></figure>
+<p>BeanFactoryTransactionAttributeSourceAdvisor是一个Advisor，在构造BeanFactoryTransactionAttributeSourceAdvisor这个bean时，需要另外两Bean。</p>
+<p>BeanFactoryTransactionAttributeSourceAdvisor中是这么定义PointCut的：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> TransactionAttributeSourcePointcut pointcut = <span class="keyword">new</span> TransactionAttributeSourcePointcut() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="meta">@Nullable</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> TransactionAttributeSource <span class="title">getTransactionAttributeSource</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> transactionAttributeSource;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>构造了一个PointCut, TransactionAttributeSource的实现对象为AnnotationTransactionAttributeSource，在PointCut匹配类时，会利用AnnotationTransactionAttributeSource去检查类上是否有@Transactional注解，在PointCut匹配方法时，会利用AnnotationTransactionAttributeSource去检查方法上是否有@Transactional注解。</p>
+<p>所以ProxyTransactionManagementConfiguration的作用就是向Spring容器中添加了一个Advisor，有了Advisor，那么Spring在构造bean时就会查看当前bean是不是匹配所设置的PointCut（也就是beanClass上是否有@Transactional注解或beanClass中某个方法上是否有@Transactional注解），如果匹配，则利用所设置的Advise（也就是TransactionInterceptor）进行AOP，生成代理对象。</p>
+<h2 id="传播机制"><a href="#传播机制" class="headerlink" title="传播机制"></a>传播机制</h2><p><img src="/2021/08/16/Spring%E4%B8%AD%E4%BA%8B%E5%8A%A1%E7%9A%84%E5%BA%95%E5%B1%82%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86/TransactionDefinition.jpg" alt="TransactionDefinition"></p>
+<h3 id="情况1"><a href="#情况1" class="headerlink" title="情况1"></a>情况1</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Autowired</span></span><br><span class="line">	<span class="keyword">private</span> UserService userService;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Transactional</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// test方法中的sql</span></span><br><span class="line">		userService.a();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Transactional</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">a</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// a方法中的sql</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>默认情况下传播机制为<strong>REQUIRED</strong></p>
+<p>所以上面这种情况的执行流程如下：</p>
+<ol>
+<li>新建一个数据库连接conn</li>
+<li>设置conn的autocommit为false</li>
+<li>执行test方法中的sql</li>
+<li>执行a方法中的sql</li>
+<li>执行conn的commit()方法进行提交</li>
+</ol>
+<h3 id="情况2"><a href="#情况2" class="headerlink" title="情况2"></a>情况2</h3><p>假如是这种情况</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Autowired</span></span><br><span class="line">	<span class="keyword">private</span> UserService userService;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Transactional</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// test方法中的sql</span></span><br><span class="line">		userService.a();</span><br><span class="line">        <span class="keyword">int</span> result = <span class="number">100</span>/<span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Transactional</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">a</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// a方法中的sql</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以上面这种情况的执行流程如下：</p>
+<ol>
+<li>新建一个数据库连接conn</li>
+<li>设置conn的autocommit为false</li>
+<li>执行test方法中的sql</li>
+<li>执行a方法中的sql</li>
+<li>抛出异常</li>
+<li>执行conn的rollback()方法进行回滚</li>
+</ol>
+<h3 id="情况3"><a href="#情况3" class="headerlink" title="情况3"></a>情况3</h3><p>假如是这种情况：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Autowired</span></span><br><span class="line">	<span class="keyword">private</span> UserService userService;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Transactional</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// test方法中的sql</span></span><br><span class="line">		userService.a();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Transactional</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">a</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// a方法中的sql</span></span><br><span class="line">        <span class="keyword">int</span> result = <span class="number">100</span>/<span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以上面这种情况的执行流程如下：</p>
+<ol>
+<li>新建一个数据库连接conn</li>
+<li>设置conn的autocommit为false</li>
+<li>执行test方法中的sql</li>
+<li>执行a方法中的sql</li>
+<li>抛出异常</li>
+<li>执行conn的rollback()方法进行回滚</li>
+</ol>
+<h3 id="情况4"><a href="#情况4" class="headerlink" title="情况4"></a>情况4</h3><p>如果是这种情况：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Autowired</span></span><br><span class="line">	<span class="keyword">private</span> UserService userService;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Transactional</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// test方法中的sql</span></span><br><span class="line">		userService.a();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Transactional(propagation = Propagation.REQUIRES_NEW)</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">a</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// a方法中的sql</span></span><br><span class="line">		<span class="keyword">int</span> result = <span class="number">100</span>/<span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以上面这种情况的执行流程如下：</p>
+<ol>
+<li>新建一个数据库连接conn</li>
+<li>设置conn的autocommit为false</li>
+<li>执行test方法中的sql</li>
+<li>又新建一个数据库连接conn2</li>
+<li>执行a方法中的sql</li>
+<li>抛出异常</li>
+<li>执行conn2的rollback()方法进行回滚</li>
+<li>继续抛异常</li>
+<li>执行conn的rollback()方法进行回滚</li>
+</ol>
+<h2 id="TransactionInterceptor执行流程"><a href="#TransactionInterceptor执行流程" class="headerlink" title="TransactionInterceptor执行流程"></a>TransactionInterceptor执行流程</h2><h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><p><img src="/2021/08/16/Spring%E4%B8%AD%E4%BA%8B%E5%8A%A1%E7%9A%84%E5%BA%95%E5%B1%82%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86/TransactionInterceptor.jpg" alt="TransactionInterceptor"></p>
+<h3 id="简单版流程"><a href="#简单版流程" class="headerlink" title="简单版流程"></a>简单版流程</h3><ol>
+<li>生成test事务状态对象</li>
+<li>test事务doBegin，获取并将数据库连接2825设置到test事务状态对象中</li>
+<li>把test事务信息设置到事务同步管理器中</li>
+<li>执行test业务逻辑方法（可以获取到test事务的信息）<ol>
+<li>生成a事务状态对象，并且可以获取到当前线程中已经存在的数据库连接2825</li>
+<li>判断出来当前线程中已经存在事务</li>
+<li>如果需要新开始事务，就先挂起数据库连接2825，挂起就是把test事务信息从事务同步管理器中转移到挂起资源对象中，并把当前a事务状态对象中的数据库连接设置为null</li>
+<li>a事务doBegin，新生成一个数据库连接2826，并设置到a事务状态对象中</li>
+<li>把a事务信息设置到事务同步管理器中</li>
+<li>执行a业务逻辑方法（可以利用事务同步管理器获取到a事务信息）</li>
+<li>利用a事务状态对象，执行提交</li>
+<li>提交之后会恢复所挂起的test事务，这里的恢复，其实只是把挂起资源对象中所保存的信息再转移回事务同步管理器中</li>
+</ol>
+</li>
+<li>继续执行test业务逻辑方法（仍然可以获取到test事务的信息）</li>
+<li>利用test事务状态对象，执行提交</li>
+</ol>
 ]]></content>
       <categories>
         <category>框架源码</category>
@@ -1199,134 +1425,6 @@
         <tag>IO</tag>
         <tag>BIO</tag>
         <tag>NIO</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Spring中AOP的底层原理分析</title>
-    <url>/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/</url>
-    <content><![CDATA[<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><h3 id="Advisor和Advice"><a href="#Advisor和Advice" class="headerlink" title="Advisor和Advice"></a>Advisor和Advice</h3><p><strong>Advice</strong>：建议/通知，可以理解为建议增加的一些逻辑（之前或者之后），但是没有表示用在哪些地方</p>
-<p>Spring中的Advice（接口）分为：</p>
-<pre><code> 1. 前置Advice：MethodBeforeAdvice
- 2. 后置Advice：AfterReturningAdvice
- 3. 环绕Advice：MethodInterceptor
- 4. 异常Advice：ThrowsAdvice</code></pre>
-<a id="more"></a>
-
-<p><strong>Advisor</strong>：表示一个Advice可以应用在哪些地方，而“哪些地方”就是Pointcut（切点）</p>
-<h3 id="Pointcut"><a href="#Pointcut" class="headerlink" title="Pointcut"></a>Pointcut</h3><p><strong>Pointcut</strong>：切点，表示想在哪些地方增加代理逻辑</p>
-<p>ClassFilter：类匹配器</p>
-<p>MethodMatcher：方法匹配器</p>
-<h2 id="使用ProxyFactor通过编程创建AOP代理"><a href="#使用ProxyFactor通过编程创建AOP代理" class="headerlink" title="使用ProxyFactor通过编程创建AOP代理"></a>使用ProxyFactor通过编程创建AOP代理</h2><p>定义一个MyAdvisor</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyAdvisor</span> <span class="keyword">implements</span> <span class="title">PointcutAdvisor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Pointcut <span class="title">getPointcut</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        NameMatchMethodPointcut methodPointcut = <span class="keyword">new</span> NameMatchMethodPointcut();</span><br><span class="line">        methodPointcut.addMethodName(<span class="string">&quot;test&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> methodPointcut;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Advice <span class="title">getAdvice</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        MethodBeforeAdvice methodBeforeAdvice = <span class="keyword">new</span> MethodBeforeAdvice() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">before</span><span class="params">(Method method, Object[] args, Object target)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;执行方法前&quot;</span>+method.getName());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="keyword">return</span> methodBeforeAdvice;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isPerInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>定义一个UserService</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;111&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">ProxyFactory factory = <span class="keyword">new</span> ProxyFactory();</span><br><span class="line">factory.setTarget(<span class="keyword">new</span> UserService());</span><br><span class="line">factory.addAdvisor(<span class="keyword">new</span> MyAdvisor());</span><br><span class="line">UserService userService = (UserService) factory.getProxy();</span><br><span class="line">userService.test();</span><br></pre></td></tr></table></figure>
-<h3 id="ProxyFactory的工作原理"><a href="#ProxyFactory的工作原理" class="headerlink" title="ProxyFactory的工作原理"></a>ProxyFactory的工作原理</h3><p>ProxyFactory就是一个代理对象生产工厂，在生成代理对象之前需要对代理工厂进行配置</p>
-<p>ProxyFactory在生成代理对象之前需要决定到底是使用JDK动态代理还是CGLIB技术：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// config就是ProxyFactory对象</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// optimize为true,或proxyTargetClass为true,或用户没有给ProxyFactory对象添加interface</span></span><br><span class="line"><span class="keyword">if</span> (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) &#123;</span><br><span class="line">    Class&lt;?&gt; targetClass = config.getTargetClass();</span><br><span class="line">    <span class="keyword">if</span> (targetClass == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> AopConfigException(<span class="string">&quot;TargetSource cannot determine target class: &quot;</span> +</span><br><span class="line">                <span class="string">&quot;Either an interface or a target is required for proxy creation.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// targetClass是接口，直接使用Jdk动态代理</span></span><br><span class="line">    <span class="keyword">if</span> (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> JdkDynamicAopProxy(config);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 使用Cglib</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> ObjenesisCglibAopProxy(config);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 使用Jdk动态代理</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> JdkDynamicAopProxy(config);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="JdkDynamicAopProxy创建代理对象过程"><a href="#JdkDynamicAopProxy创建代理对象过程" class="headerlink" title="JdkDynamicAopProxy创建代理对象过程"></a>JdkDynamicAopProxy创建代理对象过程</h4><ol>
-<li>获取生成代理对象所需要实现的接口集合<ol>
-<li>获取通过ProxyFactory.addInterface()所添加的接口，如果没有通过ProxyFactory.addInterface()添加接口，那么则看ProxyFactory.setTargetClass()所设置的targetClass是不是一个接口，把接口添加到结果集合中</li>
-<li>同时添加SpringProxy，Advised，DecoratingProxy到结果集合中</li>
-</ol>
-</li>
-<li>确定好要代理的集合之后，就利用Proxy.newProxyInstance()生成一个代理对象</li>
-</ol>
-<h3 id="JdkDynamicAopProxy创建的代理对象执行过程"><a href="#JdkDynamicAopProxy创建的代理对象执行过程" class="headerlink" title="JdkDynamicAopProxy创建的代理对象执行过程"></a>JdkDynamicAopProxy创建的代理对象执行过程</h3><ol>
-<li>如果通过ProxyFactory.setExposeProxy()把exposeProxy设置为了true，那么则把代理对象设置到一个ThreadLocal（currentProxy）中去。</li>
-<li>获取通过ProxyFactory所设置的target，如果设置的是targetClass，那么target将为null</li>
-<li>根据当前所调用的方法对象寻找ProxyFactory中所添加的并匹配的Advisor，并且把Advisor封装为MethodInterceptor返回，得到MethodInterceptor链叫做chain</li>
-<li>如果chain为空，则直接执行target对应的当前方法，如果target为null会报错</li>
-<li>如果chain不为空，则会依次执行chain中的MethodInterceptor<ol>
-<li>如果当前MethodInterceptor是MethodBeforeAdviceInterceptor，那么则先执行Advisor中所advice的before()方法，然后执行下一个MethodInterceptor</li>
-<li>如果当前MethodInterceptor是AfterReturningAdviceInterceptor，那么则先执行下一个MethodInterceptor，拿到返回值之后，再执行Advisor中所advice的afterReturning()方法</li>
-</ol>
-</li>
-</ol>
-<h3 id="ObjenesisCglibAopProxy创建代理对象过程"><a href="#ObjenesisCglibAopProxy创建代理对象过程" class="headerlink" title="ObjenesisCglibAopProxy创建代理对象过程"></a>ObjenesisCglibAopProxy创建代理对象过程</h3><ol>
-<li>创建Enhancer</li>
-<li>设置Enhancer的superClass为通过ProxyFactory.setTarget()所设置的对象的类</li>
-<li>设置Enhancer的interfaces为通过ProxyFactory.addInterface()所添加的接口，以及SpringProxy、Advised接口</li>
-<li>设置Enhancer的Callbacks为DynamicAdvisedInterceptor</li>
-<li>最后通过Enhancer创建一个代理对象</li>
-</ol>
-<h3 id="ObjenesisCglibAopProxy创建的代理对象执行过程"><a href="#ObjenesisCglibAopProxy创建的代理对象执行过程" class="headerlink" title="ObjenesisCglibAopProxy创建的代理对象执行过程"></a>ObjenesisCglibAopProxy创建的代理对象执行过程</h3><p>执行过程主要就看DynamicAdvisedInterceptor中的实现，执行逻辑和JdkDynamicAopProxy中是一样的。</p>
-<h2 id="使用“自动代理”功能"><a href="#使用“自动代理”功能" class="headerlink" title="使用“自动代理”功能"></a>使用“自动代理”功能</h2><p>“自动代理”表示，只需要在Spring中添加某个Bean，这个Bean是一个BeanPostProcessor，那么Spring在每创建一个Bean时，都会经过这个BeanPostProcessor的判断，去判断当前正在创建的这个Bean是不是需要进行AOP。</p>
-<p>我们可以在项目中定义很多个Advisor，定义方式有两种：</p>
-<ol>
-<li>通过实现PointcutAdvisor接口</li>
-<li>通过@Aspect、@Pointcut、@Before等注解</li>
-</ol>
-<p>在创建某个Bean时，会根据当前这个Bean的信息，比如对应的类，以及当前Bean中的方法信息，去和定义的所有Advisor进行匹配，如果匹配到了其中某些Advisor，那么就会把这些Advisor给找出来，并且添加到ProxyFactory中去，在利用ProxyFactory去生成代理对象</p>
-<h3 id="BeanNameAutoProxyCreator"><a href="#BeanNameAutoProxyCreator" class="headerlink" title="BeanNameAutoProxyCreator"></a>BeanNameAutoProxyCreator</h3><p>定义的这个bean，相当于一个“自动代理”器，有了这个Bean之后，可以自动的对setBeanNames中所对应的bean进行代理，代理逻辑为所设置的interceptorNames</p>
-<p><img src="/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/BeanNameAutoProxyCreator.png" alt="image-20210816005733019"></p>
-<h3 id="DefaultAdvisorAutoProxyCreator"><a href="#DefaultAdvisorAutoProxyCreator" class="headerlink" title="DefaultAdvisorAutoProxyCreator"></a>DefaultAdvisorAutoProxyCreator</h3><p><strong>DefaultAdvisorAutoProxyCreator</strong>这个更加强大，只要添加了这个Bean，它就会自动识别所有的Advisor中的PointCut进行代理</p>
-<p><img src="/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/DefaultAdvisorAutoProxyCreator.png" alt="image-20210816005939930"></p>
-<p><strong>AbstractAutoProxyCreator</strong>实现了SmartInstantiationAwareBeanPostProcessor接口，是一个BeanPostProcessor</p>
-<ol>
-<li>在某个Bean<strong>实例化之前</strong>，查看该AbstractAutoProxyCreator中是不是设置了CustomTargetSource，如果设置了就查看当前Bean是不是需要创建一个TargetSource，如果需要就会创建一个TargetSource对象，然后进行AOP创建一个代理对象，并返回该代理对象</li>
-<li>如果某个Bean出现了循环依赖，那么会利用getEarlyBeanReference()方法提前进行AOP</li>
-<li>在某个Bean<strong>初始化之后</strong>，会调用wrapIfNecessary()方法进行AOP</li>
-<li>在这个类中提供了一个抽象方法：getAdvicesAndAdvisorsForBean()，表示对于某个Bean匹配了哪些Advices和Advisors</li>
-</ol>
-<p><strong>AbstractAdvisorAutoProxyCreator</strong>继承了AbstractAutoProxyCreator，AbstractAdvisorAutoProxyCreator中实现了getAdvicesAndAdvisorsForBean()方法，实现逻辑为：</p>
-<ol>
-<li><p>调用findEligibleAdvisors()</p>
-</li>
-<li><ol>
-<li>调用findCandidateAdvisors，得到所有Advisor类型的Bean</li>
-<li>按当前正在进行Bean的生命周期的Bean进行过滤</li>
-</ol>
-</li>
-</ol>
-<h3 id="EnableAspectJAutoProxy"><a href="#EnableAspectJAutoProxy" class="headerlink" title="@EnableAspectJAutoProxy"></a>@EnableAspectJAutoProxy</h3><p>这个注解主要是添加了一个AnnotationAwareAspectJAutoProxyCreator类型的BeanDefinition</p>
-<p><img src="/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/AnnotationAwareAspectJAutoProxyCreator.png" alt="image-20210816010152672"></p>
-<p><strong>AspectJAwareAdvisorAutoProxyCreator</strong>继承了AbstractAdvisorAutoProxyCreator，重写了shouldSkip(Class&lt;?&gt; beanClass, String beanName)方法，表示某个bean需不需要进行AOP，在shouldSkip()方法中：</p>
-<ol>
-<li>拿到所有的Advisor</li>
-<li>遍历所有的Advisor，如果当前bean是AspectJPointcutAdvisor，那么则跳过</li>
-</ol>
-<p><strong>AnnotationAwareAspectJAutoProxyCreator</strong>继承了AspectJAwareAdvisorAutoProxyCreator，重写了findCandidateAdvisors()方法，它即可以找到Advisor类型的bean，也能把所有@Aspect注解标注的类扫描出来并生成Advisor</p>
-<h2 id="注解和源码对应关系"><a href="#注解和源码对应关系" class="headerlink" title="注解和源码对应关系"></a>注解和源码对应关系</h2><ol>
-<li><p>@Before对应的是AspectJMethodBeforeAdvice，直接实现MethodBeforeAdvice，在进行动态代理时会把AspectJMethodBeforeAdvice转成MethodBeforeAdviceInterceptor，也就转变成了MethodBeforeAdviceInterceptor</p>
-<ol>
-<li>先执行advice对应的方法</li>
-<li>再执行MethodInvocation的proceed()，会执行下一个Interceptor，如果没有下一个Interceptor了，会执行target对应的方法</li>
-</ol>
-</li>
-<li><p>@After对应的是AspectJAfterAdvice，直接实现了MethodInterceptor</p>
-<ol>
-<li>先执行MethodInvocation的proceed()，会执行下一个Interceptor，如果没有下一个Interceptor了，会执行target对应的方法</li>
-<li>再执行advice对应的方法</li>
-</ol>
-</li>
-<li><p>@Around对应的是AspectJAroundAdvice，直接实现了MethodInterceptor</p>
-<ol>
-<li>直接执行advice对应的方法</li>
-</ol>
-</li>
-<li><p>@AfterThrowing对应的是AspectJAfterThrowingAdvice，直接实现了MethodInterceptor</p>
-<ol>
-<li>先执行MethodInvocation的proceed()，会执行下一个Interceptor，如果没有下一个Interceptor了，会执行target对应的方法</li>
-<li>如果上面抛了Throwable，那么则会执行advice对应的方法</li>
-</ol>
-</li>
-<li><p>@AfterReturning对应的是AspectJAfterReturningAdvice，实现了AfterReturningAdvice，在进行动态代理时会把AspectJAfterReturningAdvice转成AfterReturningAdviceInterceptor，也就转变成了MethodInterceptor</p>
-</li>
-<li><ol>
-<li>先执行MethodInvocation的proceed()，会执行下一个Interceptor，如果没有下一个Interceptor了，会执行target对应的方法</li>
-<li>执行上面的方法后得到最终的方法的返回值</li>
-<li>再执行Advice对应的方法</li>
-</ol>
-</li>
-</ol>
-<h3 id="Spring中AOP的原理流程图"><a href="#Spring中AOP的原理流程图" class="headerlink" title="Spring中AOP的原理流程图"></a>Spring中AOP的原理流程图</h3><p><img src="/2021/08/15/Spring%E4%B8%ADAOP%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/AOP.jpg" alt="AOP"></p>
-]]></content>
-      <categories>
-        <category>框架源码</category>
-      </categories>
-      <tags>
-        <tag>spring</tag>
       </tags>
   </entry>
 </search>
